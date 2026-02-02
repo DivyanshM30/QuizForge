@@ -21,8 +21,8 @@ A comprehensive Next.js application that analyzes study documents, generates AI-
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd mcq_generator
+   git clone https://github.com/DivyanshM30/QuizForge
+   cd quizforge
    ```
 
 2. **Install dependencies**
@@ -58,7 +58,7 @@ A comprehensive Next.js application that analyzes study documents, generates AI-
 ## Project Structure
 
 ```
-mcq_generator/
+quizforge/
 ├── app/
 │   ├── api/
 │   │   ├── analyze-document/    # Document parsing endpoint
