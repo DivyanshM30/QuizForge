@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { QuizConfig } from '@/lib/types';
+import type { QuizConfig } from '@/lib/types';
 
 interface QuizConfigProps {
   onStart: (config: QuizConfig) => void;
