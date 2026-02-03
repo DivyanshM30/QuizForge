@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import ImageCarousel from '@/components/ImageCarousel';
 
 export default function Home() {
   const [activeFaq, setActiveFaq] = useState<string | null>(null);
@@ -79,36 +80,52 @@ export default function Home() {
                 <span className="font-semibold">Launching Soon</span>
               </div>
 
-              <h1 className="mt-6 text-4xl sm:text-6xl font-extrabold tracking-tight text-gray-50">
-                Elevate your exam prep with{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-100 to-gray-300 drop-shadow-[0_10px_30px_rgba(255,255,255,0.12)]">
+              <h1 className="mt-6 text-4xl sm:text-6xl font-extrabold tracking-tight text-gray-50 animate-fade-in-up">
+                <span className="block mb-2 text-primary-400 text-lg font-semibold animate-pulse">Ace Your Exams with AI</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-fuchsia-400 to-cyan-400 drop-shadow-[0_10px_30px_rgba(255,255,255,0.18)]">
                   QuizForge AI
                 </span>
               </h1>
-              <p className="mt-6 text-lg sm:text-xl text-gray-200/80 max-w-2xl mx-auto leading-relaxed">
-                The all-in-one platform that turns your documents into high-quality MCQs, timed quizzes,
-                and actionable performance insights—so you can revise what matters most.
+              <p className="mt-6 text-lg sm:text-xl text-gray-200/90 max-w-2xl mx-auto leading-relaxed animate-fade-in">
+                Instantly turn your notes into beautiful, challenging quizzes. Get real-time feedback, analytics, and a smarter way to revise—powered by AI.
               </p>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+              {/* Hero Carousel */}
+              <div className="mt-10 flex justify-center animate-fade-in">
+                <ImageCarousel
+                  images={[
+                    { src: '/carousel1.png', alt: 'QuizForge Hero 1' },
+                    { src: '/carousel2.png', alt: 'QuizForge Hero 2' },
+                    { src: '/carousel3.png', alt: 'QuizForge Hero 3' },
+                    { src: '/carousel4.png', alt: 'QuizForge Hero 4' },
+                    { src: '/carousel5.png', alt: 'QuizForge Hero 5' },
+                    { src: '/carousel6.png', alt: 'QuizForge Hero 6' },
+                  ]}
+                  autoSlideInterval={2000}
+                />
+              </div>
+
+              <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center animate-fade-in-up">
                 <Link
                   href="/upload"
-                  className="inline-flex items-center justify-center rounded-full bg-white text-black px-6 py-3 font-semibold hover:bg-white/90 transition-colors"
+                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-primary-500 via-fuchsia-500 to-cyan-500 text-white px-8 py-4 font-bold text-lg shadow-lg hover:scale-105 hover:from-primary-600 hover:to-cyan-600 transition-all duration-200"
                 >
-                  Get Started <span className="ml-2">→</span>
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" /></svg>
+                  Get Started
                 </Link>
                 <a
                   href="#features"
-                  className="inline-flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white px-6 py-3 font-semibold hover:bg-white/10 transition-colors"
+                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/10 text-white px-8 py-4 font-bold text-lg hover:bg-white/20 transition-all duration-200"
                 >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" /></svg>
                   Explore Features
                 </a>
               </div>
 
-              <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-400">
-                <span>✓ Works with your notes</span>
-                <span>✓ Instant feedback</span>
-                <span>✓ Topic analytics</span>
+              <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-base text-gray-300 animate-fade-in">
+                <span className="flex items-center gap-2"><svg className="w-4 h-4 text-primary-400" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 6.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l7-7a1 1 0 000-1.414z" /></svg>Works with your notes</span>
+                <span className="flex items-center gap-2"><svg className="w-4 h-4 text-primary-400" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 6.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l7-7a1 1 0 000-1.414z" /></svg>Instant feedback</span>
+                <span className="flex items-center gap-2"><svg className="w-4 h-4 text-primary-400" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 6.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l7-7a1 1 0 000-1.414z" /></svg>Topic analytics</span>
               </div>
             </div>
 
@@ -179,24 +196,25 @@ export default function Home() {
 
               <div className="mt-10 grid gap-4 md:grid-cols-3">
                 {[
-                  { t: 'Document → MCQs', d: 'Upload PDF/DOCX and generate structured questions with explanations.' },
-                  { t: 'Timed exam mode', d: 'Set time limits, track progress, and auto-finish when time runs out.' },
-                  { t: 'Instant feedback', d: 'See correct answers + explanations after each question.' },
-                  { t: 'Topic analytics', d: 'Bar charts for topic-wise accuracy and weak-area detection.' },
-                  { t: 'History & replay', d: 'Your results persist in localStorage—review anytime.' },
-                  { t: 'Export results', d: 'Export quiz attempts as JSON for archiving or sharing.' },
-                ].map((x) => (
+                  { t: 'Document → MCQs', d: 'Upload PDF/DOCX and generate structured questions with explanations.', icon: '📄' },
+                  { t: 'Timed exam mode', d: 'Set time limits, track progress, and auto-finish when time runs out.', icon: '⏰' },
+                  { t: 'Instant feedback', d: 'See correct answers + explanations after each question.', icon: '⚡' },
+                  { t: 'Topic analytics', d: 'Bar charts for topic-wise accuracy and weak-area detection.', icon: '📊' },
+                  { t: 'History & replay', d: 'Your results persist in localStorage—review anytime.', icon: '🕓' },
+                  { t: 'Export results', d: 'Export quiz attempts as JSON for archiving or sharing.', icon: '⬇️' },
+                ].map((x, i) => (
                   <div
                     key={x.t}
-                    className="group rounded-3xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 transition-colors"
+                    className="group rounded-3xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 transition-colors animate-fade-in"
+                    style={{ animationDelay: `${i * 0.08 + 0.1}s` }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-2xl bg-white/5 border border-white/10 grid place-items-center">
-                        <div className="h-3 w-3 rounded bg-white/80 group-hover:bg-white transition-colors" />
+                      <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-primary-500/30 to-cyan-500/20 border border-white/10 grid place-items-center text-2xl">
+                        <span>{x.icon}</span>
                       </div>
                       <div className="text-base font-semibold text-gray-50">{x.t}</div>
                     </div>
-                    <div className="mt-3 text-sm text-gray-200/70 leading-relaxed">{x.d}</div>
+                    <div className="mt-3 text-sm text-gray-200/80 leading-relaxed">{x.d}</div>
                   </div>
                 ))}
               </div>
@@ -216,13 +234,16 @@ export default function Home() {
               </div>
               <div className="mt-10 grid gap-4 md:grid-cols-3">
                 {[
-                  { q: 'I converted my notes into a 20-minute test and immediately saw my weak topics.', a: 'Student' },
-                  { q: 'The explanations are clutch. It feels like an instructor reviewing each mistake.', a: 'Learner' },
-                  { q: 'Topic-wise analytics saved me hours. I stopped revising what I already knew.', a: 'Candidate' },
+                  { q: 'I converted my notes into a 20-minute test and immediately saw my weak topics.', a: 'Student', avatar: 'https://randomuser.me/api/portraits/men/32.jpg' },
+                  { q: 'The explanations are clutch. It feels like an instructor reviewing each mistake.', a: 'Learner', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
+                  { q: 'Topic-wise analytics saved me hours. I stopped revising what I already knew.', a: 'Candidate', avatar: 'https://randomuser.me/api/portraits/men/65.jpg' },
                 ].map((x, i) => (
-                  <div key={i} className="rounded-3xl border border-white/10 bg-white/5 p-6">
+                  <div key={i} className="rounded-3xl border border-white/10 bg-white/5 p-6 animate-fade-in" style={{ animationDelay: `${i * 0.12 + 0.1}s` }}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <img src={x.avatar} alt={x.a} className="w-10 h-10 rounded-full border border-white/20 shadow" loading="lazy" />
+                      <div className="text-sm text-gray-200/80">{x.a}</div>
+                    </div>
                     <div className="text-gray-50/90 leading-relaxed text-base">“{x.q}”</div>
-                    <div className="mt-4 text-sm text-gray-200/70">— {x.a}</div>
                   </div>
                 ))}
               </div>
@@ -245,20 +266,27 @@ export default function Home() {
                   { k: 'Where is my quiz history stored?', v: 'In your browser localStorage for zero-cost deployment.' },
                   { k: 'Do I need an API key?', v: 'Yes. Set GEMINI_API_KEY in your environment variables.' },
                   { k: 'Can I export results?', v: 'Yes—results can be exported as JSON from the results screen.' },
-                ].map((item) => {
+                ].map((item, i) => {
                   const open = activeFaq === item.k;
                   return (
                     <button
                       key={item.k}
                       type="button"
                       onClick={() => setActiveFaq(open ? null : item.k)}
-                      className="w-full text-left rounded-3xl border border-white/10 bg-white/5 p-5 hover:bg-white/10 transition-colors"
+                      className={`w-full text-left rounded-3xl border border-white/10 bg-white/5 p-5 hover:bg-white/10 transition-colors focus:outline-none transition-all duration-300 ${open ? 'shadow-lg scale-[1.02] bg-white/10' : ''} animate-fade-in`}
+                      style={{ animationDelay: `${i * 0.08 + 0.1}s` }}
+                      aria-expanded={open}
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="text-sm font-semibold text-gray-100">{item.k}</div>
-                        <div className="text-gray-300">{open ? '−' : '+'}</div>
+                        <div className="text-gray-300 transition-transform duration-300" style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>{open ? '−' : '+'}</div>
                       </div>
-                      {open && <div className="mt-3 text-sm text-gray-400 leading-relaxed">{item.v}</div>}
+                      <div
+                        className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-40 opacity-100 mt-3' : 'max-h-0 opacity-0'}`}
+                        style={{ maxHeight: open ? 200 : 0 }}
+                      >
+                        {open && <div className="text-sm text-gray-400 leading-relaxed">{item.v}</div>}
+                      </div>
                     </button>
                   );
                 })}
@@ -269,10 +297,23 @@ export default function Home() {
           {/* Footer */}
           <footer className="border-t border-white/10 py-10 text-sm text-gray-500">
             <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>© {new Date().getFullYear()} QuizForge AI</div>
+              <div>
+                © {new Date().getFullYear()} QuizForge AI
+                <span className="block mt-1 text-xs text-gray-400">Made with ❤️ by Divyansh Mishra</span>
+              </div>
               <div className="flex items-center gap-4">
                 <Link className="hover:text-gray-200" href="/upload">Get Started</Link>
                 <Link className="hover:text-gray-200" href="/history">History</Link>
+                {/* Social Links */}
+                <a href="https://github.com/DivyanshM30" target="_blank" rel="noopener noreferrer" className="hover:text-gray-200" aria-label="GitHub">
+                  <svg className="w-5 h-5 inline ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.184 6.839 9.504.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.004.07 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.987 1.029-2.686-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.025A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.748-1.025 2.748-1.025.546 1.378.202 2.397.1 2.65.64.699 1.028 1.593 1.028 2.686 0 3.847-2.338 4.695-4.566 4.944.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.749 0 .267.18.577.688.48C19.138 20.2 22 16.447 22 12.021 22 6.484 17.523 2 12 2z"/></svg>
+                </a>
+                <a href="https://linkedin.com/in/DivyanshM30" target="_blank" rel="noopener noreferrer" className="hover:text-gray-200" aria-label="LinkedIn">
+                  <svg className="w-5 h-5 inline ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.761 0 5-2.239 5-5v-14c0-2.761-2.239-5-5-5zm-11 19h-3v-10h3v10zm-1.5-11.268c-.966 0-1.75-.784-1.75-1.75s.784-1.75 1.75-1.75 1.75.784 1.75 1.75-.784 1.75-1.75 1.75zm13.5 11.268h-3v-5.604c0-1.337-.025-3.063-1.868-3.063-1.868 0-2.154 1.459-2.154 2.967v5.7h-3v-10h2.881v1.367h.041c.401-.761 1.381-1.563 2.841-1.563 3.039 0 3.6 2.001 3.6 4.599v5.597z"/></svg>
+                </a>
+                <a href="https://twitter.com/yourusername" target="_blank" rel="noopener noreferrer" className="hover:text-gray-200" aria-label="Twitter">
+                  <svg className="w-5 h-5 inline ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557a9.93 9.93 0 0 1-2.828.775 4.932 4.932 0 0 0 2.165-2.724c-.951.564-2.005.974-3.127 1.195a4.92 4.92 0 0 0-8.384 4.482C7.691 8.095 4.066 6.13 1.64 3.161c-.542.929-.856 2.01-.857 3.17 0 2.188 1.115 4.117 2.823 5.254a4.904 4.904 0 0 1-2.229-.616c-.054 2.281 1.581 4.415 3.949 4.89a4.936 4.936 0 0 1-2.224.084c.627 1.956 2.444 3.377 4.6 3.417A9.867 9.867 0 0 1 0 21.543a13.94 13.94 0 0 0 7.548 2.209c9.057 0 14.009-7.496 14.009-13.986 0-.213-.005-.425-.014-.636A9.936 9.936 0 0 0 24 4.557z"/></svg>
+                </a>
               </div>
             </div>
           </footer>
