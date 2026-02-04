@@ -22,15 +22,15 @@ export default function ImageCarousel({ images, autoSlide = true, autoSlideInter
   const next = () => setCurrent((prev) => (prev + 1) % images.length);
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto">
+    <div className="relative w-full max-w-5xl mx-auto">
       <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl">
         {images.map((img, idx) => (
           <img
             key={img.src}
             src={img.src}
             alt={img.alt || `Slide ${idx + 1}`}
-            className={`w-full h-[22rem] object-contain transition-opacity duration-700 bg-black ${idx === current ? 'opacity-100' : 'opacity-0 absolute top-0 left-0'}`}
-            style={{ minHeight: 352 }}
+            className={`w-full h-[28rem] object-contain transition-opacity duration-700 bg-black ${idx === current ? 'opacity-100' : 'opacity-0 absolute top-0 left-0'}`}
+            style={{ minHeight: 448 }}
             loading={idx === 0 ? 'eager' : 'lazy'}
           />
         ))}
