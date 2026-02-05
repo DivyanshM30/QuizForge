@@ -111,7 +111,7 @@ export default function Home() {
                   className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-primary-500 via-fuchsia-500 to-cyan-500 text-white px-8 py-4 font-bold text-lg shadow-lg hover:scale-105 hover:from-primary-600 hover:to-cyan-600 transition-all duration-200"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" /></svg>
-                  Get Started
+                  Try
                 </Link>
                 <a
                   href="#features"

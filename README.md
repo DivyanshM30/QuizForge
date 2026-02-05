@@ -1,4 +1,4 @@
-# AI-Powered Exam Simulator
+# MCQ Generator using AI by Divyansh Mishra
 
 A comprehensive Next.js application that analyzes study documents, generates AI-powered MCQs using Gemini API, conducts timed quizzes, and provides detailed performance analytics.
 
