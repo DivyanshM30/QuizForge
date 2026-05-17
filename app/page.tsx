@@ -8,15 +8,15 @@ import Image from 'next/image';
 const STEPS = [
   {
     num: 1,
-    title: 'Configure Your Quiz',
-    desc: 'Choose the number of questions, time limit, and difficulty level to tailor the quiz to your needs.',
-    img: '/carousel1.png',
-  },
-  {
-    num: 2,
     title: 'Upload Study Material',
     desc: 'Drag & drop your PDF or DOCX. We extract the text instantly — no manual copy-paste required.',
     img: '/carousel2.png',
+  },
+  {
+    num: 2,
+    title: 'Configure Your Quiz',
+    desc: 'Choose the number of questions, time limit, and difficulty level to tailor the quiz to your needs.',
+    img: '/carousel1.png',
   },
   {
     num: 3,
