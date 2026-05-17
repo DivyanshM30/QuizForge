@@ -1,4 +1,4 @@
-import { Question, QuizResult, TopicPerformance } from './types';
+import { Question, QuizResult, TopicPerformance, QuizConfig } from './types';
 
 export function calculateScore(
   questions: Question[],
