@@ -4,14 +4,18 @@
 
 :root {
   --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 15, 23, 42;
-  --background-end-rgb: 30, 41, 59;
+  --background-start-rgb: 8, 10, 18;
+  --background-end-rgb: 15, 20, 35;
 }
 
 * {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 html,
@@ -46,24 +50,36 @@ body {
 
   .bg-grid {
     background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-    background-size: 64px 64px;
+      linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
     background-position: center;
   }
 
   .mask-fade {
-    -webkit-mask-image: radial-gradient(ellipse at center, #000 55%, transparent 75%);
-    mask-image: radial-gradient(ellipse at center, #000 55%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 40%, transparent 75%);
+    mask-image: radial-gradient(ellipse at center, #000 40%, transparent 75%);
   }
 }
 
+/* ─── Animations ─── */
 @keyframes fade-in {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -86,25 +102,39 @@ body {
   animation: fade-in 0.3s ease-out;
 }
 
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out both;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out both;
+}
+
 .zoom-in {
   animation: zoom-in 0.2s ease-out;
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(31, 41, 55, 0.5);
+  background: rgba(15, 20, 30, 0.5);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(14, 165, 233, 0.5);
-  border-radius: 4px;
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(14, 165, 233, 0.7);
+  background: rgba(139, 92, 246, 0.5);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(217, 70, 239, 0.3);
+  color: white;
 }
