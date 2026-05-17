@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     })
 
     // Parse the JSON string fields back to objects for the frontend
-    const formattedResults = results.map(result => ({
+    const formattedResults = results.map((result: any) => ({
       ...result,
       config: JSON.parse(result.config),
       topicPerformance: JSON.parse(result.topicPerformance),
