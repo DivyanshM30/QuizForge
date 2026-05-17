@@ -5,62 +5,59 @@ import { QuizResult } from '@/lib/types';
 import { formatTime } from '@/lib/quiz-utils';
 import Link from 'next/link';
 
-const STORAGE_KEY = 'quiz-history';
-
-export function saveQuizToHistory(result: QuizResult) {
-  if (typeof window === 'undefined') return;
-
-  const history = getQuizHistory();
-  history.unshift(result);
-  // Keep only last 50 quizzes
-  const limitedHistory = history.slice(0, 50);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(limitedHistory));
-}
-
-export function getQuizHistory(): QuizResult[] {
-  if (typeof window === 'undefined') return [];
-
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function deleteQuizFromHistory(id: string) {
-  if (typeof window === 'undefined') return;
-
-  const history = getQuizHistory();
-  const filtered = history.filter((quiz) => quiz.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-}
-
-export function clearQuizHistory() {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem(STORAGE_KEY);
-}
-
 export default function QuizHistory() {
   const [history, setHistory] = useState<QuizResult[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchHistory = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/history');
+      if (!res.ok) throw new Error('Failed to fetch history');
+      const data = await res.json();
+      setHistory(data);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setHistory(getQuizHistory());
+    fetchHistory();
   }, []);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this quiz result?')) {
-      deleteQuizFromHistory(id);
-      setHistory(getQuizHistory());
+      try {
+        const res = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          fetchHistory();
+        } else {
+          alert('Failed to delete history');
+        }
+      } catch (err) {
+        alert('An error occurred');
+      }
     }
   };
 
-  const handleClearAll = () => {
-    if (confirm('Are you sure you want to clear all quiz history? This cannot be undone.')) {
-      clearQuizHistory();
-      setHistory([]);
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-4xl mx-auto flex justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full max-w-4xl mx-auto text-center text-red-400 py-12">
+        {error}
+      </div>
+    );
+  }
 
   if (history.length === 0) {
     return (
@@ -84,7 +81,7 @@ export default function QuizHistory() {
           <h3 className="text-xl font-bold text-gray-300 mb-2">No Quiz History</h3>
           <p className="text-gray-500 mb-6">Complete a quiz to see your results here.</p>
           <Link
-            href="/"
+            href="/upload"
             className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
           >
             Start a New Quiz
@@ -98,12 +95,6 @@ export default function QuizHistory() {
     <div className="w-full max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-3xl font-bold text-gray-100">Quiz History</h2>
-        <button
-          onClick={handleClearAll}
-          className="bg-red-600/20 hover:bg-red-600/30 text-red-400 font-semibold py-2 px-4 rounded-lg transition-colors border border-red-500/30"
-        >
-          Clear All
-        </button>
       </div>
 
       <div className="space-y-4">
@@ -126,9 +117,9 @@ export default function QuizHistory() {
                   </div>
                 </div>
                 <div className="text-sm text-gray-500">
-                  {new Date(quiz.timestamp).toLocaleString()}
+                  {new Date(quiz.createdAt || quiz.timestamp || Date.now()).toLocaleString()}
                 </div>
-                {quiz.weakTopics.length > 0 && (
+                {quiz.weakTopics && quiz.weakTopics.length > 0 && (
                   <div className="mt-2 text-sm text-gray-400">
                     Weak topics: {quiz.weakTopics.slice(0, 3).join(', ')}
                     {quiz.weakTopics.length > 3 && '...'}

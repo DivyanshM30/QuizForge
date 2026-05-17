@@ -30,6 +30,7 @@ export interface QuizSession {
 
 export interface QuizResult {
   id: string;
+  createdAt?: string | Date;
   timestamp: number;
   score: number;
   totalQuestions: number;
@@ -39,6 +40,7 @@ export interface QuizResult {
   topicPerformance: TopicPerformance[];
   weakTopics: string[];
   revisionSuggestions: string[];
+  config: QuizConfig;
   questions: Question[];
   userAnswers: (string | null)[];
 }

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { QuizResult } from '@/lib/types';
 import ResultsDashboard from '@/components/ResultsDashboard';
-import { getQuizHistory } from '@/components/QuizHistory';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -15,16 +14,24 @@ export default function QuizDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const history = getQuizHistory();
-    const quiz = history.find((q) => q.id === params.id);
+    const fetchQuiz = async () => {
+      try {
+        const res = await fetch(`/api/history/${params.id}`);
+        if (!res.ok) {
+          router.push('/history');
+          return;
+        }
+        const data = await res.json();
+        setResult(data);
+      } catch (error) {
+        console.error('Failed to fetch quiz', error);
+        router.push('/history');
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    if (quiz) {
-      setResult(quiz);
-    } else {
-      // Quiz not found, redirect to history
-      router.push('/history');
-    }
-    setLoading(false);
+    fetchQuiz();
   }, [params.id, router]);
 
   if (loading) {

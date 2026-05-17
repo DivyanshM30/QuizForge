@@ -1,38 +1,62 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { QuizResult } from '@/lib/types';
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
 
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    const quizResult: QuizResult = body;
+    const session = await getServerSession(authOptions)
 
-    if (!quizResult) {
+    if (!session || !session.user) {
       return NextResponse.json(
-        { error: 'No quiz result provided' },
-        { status: 400 }
-      );
+        { message: "Unauthorized" },
+        { status: 401 }
+      )
     }
 
-    // Validate quiz result structure
-    if (!quizResult.id || !quizResult.questions || !quizResult.userAnswers) {
-      return NextResponse.json(
-        { error: 'Invalid quiz result structure' },
-        { status: 400 }
-      );
-    }
+    const { 
+      score, 
+      totalQuestions, 
+      accuracy, 
+      timeTaken, 
+      timeLimit, 
+      config, 
+      topicPerformance, 
+      weakTopics, 
+      revisionSuggestions,
+      questions,
+      userAnswers 
+    } = await req.json()
 
-    // Note: Actual storage happens client-side using localStorage
-    // This endpoint just validates and confirms
-    return NextResponse.json({
-      success: true,
-      message: 'Quiz result validated. Save to localStorage on client side.',
-      quizId: quizResult.id,
-    });
-  } catch (error: any) {
-    console.error('Error saving quiz:', error);
+    // @ts-ignore
+    const userId = session.id as string
+
+    const result = await prisma.quizResult.create({
+      data: {
+        userId,
+        score,
+        totalQuestions,
+        accuracy,
+        timeTaken,
+        timeLimit,
+        config: JSON.stringify(config),
+        topicPerformance: JSON.stringify(topicPerformance),
+        weakTopics: JSON.stringify(weakTopics),
+        revisionSuggestions: JSON.stringify(revisionSuggestions),
+        questions: JSON.stringify(questions),
+        userAnswers: JSON.stringify(userAnswers),
+      },
+    })
+
     return NextResponse.json(
-      { error: error.message || 'Failed to save quiz' },
+      { message: "Quiz result saved successfully", result },
+      { status: 201 }
+    )
+  } catch (error) {
+    console.error("Save quiz error:", error)
+    return NextResponse.json(
+      { message: "An error occurred while saving the quiz" },
       { status: 500 }
-    );
+    )
   }
 }

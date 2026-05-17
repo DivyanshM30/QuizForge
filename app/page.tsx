@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
+import Image from 'next/image';
 
 const STEPS = [
   {
@@ -67,6 +69,7 @@ const FAQS = [
 export default function Home() {
   const [activeFaq, setActiveFaq] = useState<string | null>(null);
   const [activeStep, setActiveStep] = useState(0);
+  const { data: session, status } = useSession();
 
   return (
     <main className="min-h-screen">
@@ -83,10 +86,8 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 py-3.5 md:px-8">
           <div className="flex items-center justify-between gap-3">
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-primary-500/30 to-fuchsia-500/20 border border-white/10 group-hover:border-white/20 transition-colors">
-                <svg className="w-4 h-4 text-primary-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
+              <div className="relative flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden shadow-lg shadow-primary-500/20 group-hover:shadow-primary-500/40 transition-shadow">
+                <Image src="/logo.png" alt="QuizForge Logo" width={36} height={36} className="object-cover" />
               </div>
               <span className="font-semibold text-gray-100 tracking-tight">QuizForge</span>
             </Link>
@@ -99,18 +100,45 @@ export default function Home() {
             </nav>
 
             <div className="flex items-center gap-2">
-              <Link
-                href="/history"
-                className="hidden sm:inline-flex h-9 items-center justify-center rounded-lg px-3.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200"
-              >
-                History
-              </Link>
-              <Link
-                href="/upload"
-                className="inline-flex h-9 items-center justify-center rounded-lg bg-white text-black px-4 text-sm font-semibold hover:bg-white/90 transition-colors shadow-lg shadow-white/5"
-              >
-                Get Started <span className="ml-1.5">→</span>
-              </Link>
+              {status === 'loading' ? (
+                <div className="h-9 w-24 bg-white/10 animate-pulse rounded-lg" />
+              ) : session ? (
+                <>
+                  <Link
+                    href="/history"
+                    className="hidden sm:inline-flex h-9 items-center justify-center rounded-lg px-3.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200"
+                  >
+                    History
+                  </Link>
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="hidden sm:inline-flex h-9 items-center justify-center rounded-lg px-3.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200"
+                  >
+                    Sign out
+                  </button>
+                  <Link
+                    href="/upload"
+                    className="inline-flex h-9 items-center justify-center rounded-lg bg-white text-black px-4 text-sm font-semibold hover:bg-white/90 transition-colors shadow-lg shadow-white/5"
+                  >
+                    Dashboard <span className="ml-1.5">→</span>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="hidden sm:inline-flex h-9 items-center justify-center rounded-lg px-3.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="inline-flex h-9 items-center justify-center rounded-lg bg-white text-black px-4 text-sm font-semibold hover:bg-white/90 transition-colors shadow-lg shadow-white/5"
+                  >
+                    Get Started <span className="ml-1.5">→</span>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -97,7 +97,8 @@ export function createQuizResult(
   questions: Question[],
   userAnswers: (string | null)[],
   timeTaken: number,
-  timeLimit: number
+  timeLimit: number,
+  config: QuizConfig
 ): QuizResult {
   const score = calculateScore(questions, userAnswers);
   const accuracy = calculateAccuracy(score, questions.length);
@@ -116,6 +117,7 @@ export function createQuizResult(
     topicPerformance,
     weakTopics,
     revisionSuggestions,
+    config,
     questions,
     userAnswers,
   };

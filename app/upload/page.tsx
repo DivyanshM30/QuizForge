@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useQuizStore } from '@/store/quiz-store';
 import FileUpload from '@/components/FileUpload';
 import QuizConfig from '@/components/QuizConfig';
@@ -9,12 +11,21 @@ import ResultsDashboard from '@/components/ResultsDashboard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { QuizConfig as QuizConfigType, Question, QuizResult } from '@/lib/types';
 import { createQuizResult } from '@/lib/quiz-utils';
-import { saveQuizToHistory } from '@/components/QuizHistory';
 import Link from 'next/link';
+import Image from 'next/image';
 
 type Step = 'upload' | 'config' | 'quiz' | 'results';
 
 export default function UploadPage() {
+  const { data: sessionData, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
   const {
     documentText,
     session,
@@ -77,7 +88,7 @@ export default function UploadPage() {
     }
   };
 
-  const handleQuizComplete = () => {
+  const handleQuizComplete = async () => {
     if (!session) return;
 
     const timeTaken = Math.floor((Date.now() - session.startTime) / 1000);
@@ -85,11 +96,21 @@ export default function UploadPage() {
       session.questions,
       session.userAnswers,
       timeTaken,
-      session.timeLimit
+      session.timeLimit,
+      session.config
     );
 
     setResult(quizResult);
-    saveQuizToHistory(quizResult);
+    
+    // Save to database in the background (fire-and-forget)
+    fetch('/api/save-quiz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(quizResult),
+    }).catch(error => {
+      console.error('Failed to save quiz to database:', error);
+    });
+    
     endQuiz();
     setStep('results');
   };
@@ -112,8 +133,8 @@ export default function UploadPage() {
         <div className="mx-auto max-w-7xl px-4 py-3 md:px-8">
           <div className="flex items-center justify-between gap-3">
             <Link href="/" className="flex items-center gap-3">
-              <div className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-primary-500/30 to-fuchsia-500/20 border border-white/10">
-                <div className="h-4 w-4 rounded bg-primary-400/70 rotate-12" />
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-lg shadow-primary-500/20">
+                <Image src="/logo.png" alt="QuizForge Logo" width={40} height={40} className="object-cover" />
               </div>
               <div className="leading-tight">
                 <div className="text-sm font-semibold text-gray-100">QuizForge AI</div>
@@ -133,6 +154,12 @@ export default function UploadPage() {
                 className="inline-flex bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
               >
                 New Quiz
+              </button>
+              <button
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="hidden sm:inline-flex bg-white/5 hover:bg-white/10 text-gray-100 font-semibold px-4 py-2 rounded-lg transition-colors border border-white/10 ml-2"
+              >
+                Sign out
               </button>
             </div>
           </div>
