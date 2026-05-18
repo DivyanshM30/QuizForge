@@ -8,8 +8,8 @@ A comprehensive Next.js application that analyzes study documents, generates AI-
 - 🤖 **AI Question Generation**: Uses Google Gemini 2.5 Flash to generate high-quality MCQs
 - ⏱️ **Timed Quizzes**: Customizable time limits with countdown timer
 - 📊 **Performance Analytics**: Detailed topic-wise performance analysis with visual charts
-- 🔒 **Secure Authentication**: Secure user registration and login powered by NextAuth.js and bcrypt
-- 📈 **Persistent History**: Track your progress with SQLite database storage using Prisma ORM
+- 🔒 **Secure Authentication**: Secure user registration and login powered by NextAuth.js and bcryptjs
+- 📈 **Persistent History**: Track your progress with PostgreSQL database storage using Prisma ORM
 - 🎨 **Modern UI**: Beautiful glassmorphism design with responsive layout
 - ⚡ **Real-time Feedback**: Immediate feedback after each question with explanations
 
@@ -17,7 +17,7 @@ A comprehensive Next.js application that analyzes study documents, generates AI-
 
 - Node.js 18+ and npm/yarn
 - Google Gemini API Key ([Get one here](https://makersuite.google.com/app/apikey))
-- SQLite (included with Prisma)
+- PostgreSQL Database (e.g., Neon or Supabase)
 
 ## Setup Instructions
 
@@ -34,8 +34,9 @@ A comprehensive Next.js application that analyzes study documents, generates AI-
 
 3. **Configure environment variables**
    
-   Create a `.env.local` file in the root directory:
+   Create a `.env` file in the root directory:
    ```env
+   DATABASE_URL="postgresql://username:password@host/database"
    GEMINI_API_KEY=your_gemini_api_key_here
    GEMINI_MODEL=gemini-2.5-flash
    NEXTAUTH_SECRET=your_super_secret_key_here
@@ -110,6 +111,7 @@ quizforge/
 
 | Variable | Description | Required |
 |----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
 | `GEMINI_API_KEY` | Your Google Gemini API key | Yes |
 | `GEMINI_MODEL` | Gemini model to use (default: `gemini-2.5-flash`) | No |
 | `NEXTAUTH_SECRET`| Secret key used to encrypt session tokens | Yes |
@@ -120,8 +122,8 @@ quizforge/
 
 1. Push your code to GitHub
 2. Import your repository in [Vercel](https://vercel.com)
-3. Add your `GEMINI_API_KEY` and `NEXTAUTH_SECRET` in the environment variables section
-4. Deploy! Note: Vercel serverless functions are read-only so SQLite is for development only. Use a cloud database (like Neon, Supabase, or PlanetScale) in production.
+3. Add your `DATABASE_URL`, `GEMINI_API_KEY`, `NEXTAUTH_SECRET`, and `NEXTAUTH_URL` in the environment variables section
+4. Deploy!
 
 ### Other Platforms
 
@@ -141,7 +143,7 @@ Make sure to set the `GEMINI_API_KEY` and `NEXTAUTH_SECRET` environment variable
 
 ## Database
 
-Quiz history and user accounts are stored in an **SQLite** database managed by **Prisma ORM**. For production deployment, you can easily swap SQLite with PostgreSQL, MySQL, or MongoDB by modifying the `prisma/schema.prisma` file and providing a `DATABASE_URL` environment variable.
+Quiz history and user accounts are stored in a **PostgreSQL** database (e.g., Neon or Supabase) managed by **Prisma ORM**, ensuring fast, reliable, and persistent storage optimized for serverless hosting on Vercel.
 
 ## Technologies Used
 
@@ -150,12 +152,12 @@ Quiz history and user accounts are stored in an **SQLite** database managed by *
 - **Tailwind CSS**: Styling
 - **NextAuth.js**: Authentication
 - **Prisma**: Database ORM
-- **SQLite**: Development database
+- **PostgreSQL**: Production and development database
 - **Zustand**: State management
 - **Recharts**: Data visualization
 - **React Dropzone**: File uploads
 - **Google Gemini API**: AI question generation
-- **bcrypt**: Password hashing
+- **bcryptjs**: Serverless-compatible password hashing
 
 ## Troubleshooting
 
