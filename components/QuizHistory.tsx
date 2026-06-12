@@ -62,10 +62,10 @@ export default function QuizHistory() {
   if (history.length === 0) {
     return (
       <div className="w-full max-w-4xl mx-auto">
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-12 border border-gray-700 text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-700/50 flex items-center justify-center mx-auto mb-4">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+          <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
             <svg
-              className="w-8 h-8 text-gray-500"
+              className="w-8 h-8 text-primary-500"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -78,11 +78,11 @@ export default function QuizHistory() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-300 mb-2">No Quiz History</h3>
-          <p className="text-gray-500 mb-6">Complete a quiz to see your results here.</p>
+          <h3 className="text-xl font-bold text-indigo-950 dark:text-slate-100 mb-2">No Quiz History</h3>
+          <p className="text-slate-500 dark:text-slate-400 mb-6 font-medium">Complete a quiz to see your results here.</p>
           <Link
             href="/upload"
-            className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+            className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-sm"
           >
             Start a New Quiz
           </Link>
@@ -94,33 +94,33 @@ export default function QuizHistory() {
   return (
     <div className="w-full max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-3xl font-bold text-gray-100">Quiz History</h2>
+        <h2 className="text-3xl font-extrabold text-indigo-950 dark:text-slate-100">Quiz History</h2>
       </div>
 
       <div className="space-y-4">
         {history.map((quiz) => (
           <div
             key={quiz.id}
-            className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700 hover:border-primary-500/50 transition-all"
+            className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-md transition-all"
           >
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-4 mb-2">
-                  <div className="text-2xl font-bold text-primary-400">
+                  <div className="text-2xl font-bold text-primary-600">
                     {quiz.score}/{quiz.totalQuestions}
                   </div>
-                  <div className="text-lg font-semibold text-gray-300">
+                  <div className="text-lg font-bold text-indigo-950 dark:text-slate-100">
                     {quiz.accuracy}% Accuracy
                   </div>
-                  <div className="text-sm text-gray-400">
+                  <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
                     {formatTime(quiz.timeTaken)} / {formatTime(quiz.timeLimit)}
                   </div>
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm font-medium text-slate-400 dark:text-slate-500">
                   {new Date(quiz.createdAt || quiz.timestamp || Date.now()).toLocaleString()}
                 </div>
                 {quiz.weakTopics && quiz.weakTopics.length > 0 && (
-                  <div className="mt-2 text-sm text-gray-400">
+                  <div className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
                     Weak topics: {quiz.weakTopics.slice(0, 3).join(', ')}
                     {quiz.weakTopics.length > 3 && '...'}
                   </div>
@@ -129,13 +129,13 @@ export default function QuizHistory() {
               <div className="flex gap-2">
                 <Link
                   href={`/history/${quiz.id}`}
-                  className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                  className="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-sm"
                 >
                   View Details
                 </Link>
                 <button
                   onClick={() => handleDelete(quiz.id)}
-                  className="bg-red-600/20 hover:bg-red-600/30 text-red-400 font-semibold py-2 px-4 rounded-lg transition-colors border border-red-500/30"
+                  className="bg-white dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 font-bold py-2 px-4 rounded-lg transition-colors border border-red-200 dark:border-red-900/50 shadow-sm"
                 >
                   Delete
                 </button>

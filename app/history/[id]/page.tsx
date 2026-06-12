@@ -56,11 +56,11 @@ export default function QuizDetailPage() {
             <div>
               <Link
                 href="/history"
-                className="text-primary-400 hover:text-primary-300 mb-2 inline-block"
+                className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 mb-2 inline-block font-semibold transition-colors"
               >
                 ← Back to History
               </Link>
-              <h1 className="text-4xl font-bold text-gray-100">Quiz Results</h1>
+              <h1 className="text-4xl font-bold text-indigo-950 dark:text-slate-100">Quiz Results</h1>
             </div>
             <Link
               href="/upload"

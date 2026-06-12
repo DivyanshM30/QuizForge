@@ -3,6 +3,7 @@
 import { QuizResult } from '@/lib/types';
 import { formatTime } from '@/lib/quiz-utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useTheme } from 'next-themes';
 
 interface ResultsDashboardProps {
   result: QuizResult;
@@ -10,6 +11,9 @@ interface ResultsDashboardProps {
 }
 
 export default function ResultsDashboard({ result, onRetake }: ResultsDashboardProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const handleExportJSON = () => {
     const dataStr = JSON.stringify(result, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -36,25 +40,25 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Score Summary */}
-      <div className="bg-gradient-to-br from-primary-600/20 to-purple-600/20 backdrop-blur-sm rounded-2xl p-8 border border-primary-500/30">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-indigo-100 dark:border-slate-800 shadow-sm">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-100 mb-4">Quiz Results</h2>
+          <h2 className="text-3xl font-extrabold text-indigo-950 dark:text-slate-100 mb-4">Quiz Results</h2>
           <div className="flex items-center justify-center gap-8 flex-wrap">
             <div>
-              <div className="text-5xl font-bold text-primary-400">
+              <div className="text-5xl font-extrabold text-primary-600 dark:text-primary-400">
                 {result.score}/{result.totalQuestions}
               </div>
-              <div className="text-gray-400 text-sm mt-1">Score</div>
+              <div className="text-slate-500 dark:text-slate-400 font-bold text-sm mt-1 uppercase tracking-wider">Score</div>
             </div>
             <div>
-              <div className="text-5xl font-bold text-primary-400">{result.accuracy}%</div>
-              <div className="text-gray-400 text-sm mt-1">Accuracy</div>
+              <div className="text-5xl font-extrabold text-primary-600 dark:text-primary-400">{result.accuracy}%</div>
+              <div className="text-slate-500 dark:text-slate-400 font-bold text-sm mt-1 uppercase tracking-wider">Accuracy</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-primary-400">
+              <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">
                 {formatTime(result.timeTaken)}
               </div>
-              <div className="text-gray-400 text-sm mt-1">Time Taken</div>
+              <div className="text-slate-500 dark:text-slate-400 font-bold text-sm mt-1 uppercase tracking-wider">Time Taken</div>
             </div>
           </div>
         </div>
@@ -62,25 +66,28 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
 
       {/* Topic Performance Chart */}
       {result.topicPerformance.length > 0 && (
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-          <h3 className="text-xl font-bold text-gray-100 mb-6">Topic-wise Performance</h3>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-indigo-100 dark:border-slate-800 shadow-sm">
+          <h3 className="text-xl font-extrabold text-indigo-950 dark:text-slate-100 mb-6">Topic-wise Performance</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
               <XAxis
                 dataKey="topic"
-                stroke="#9ca3af"
+                stroke={isDark ? '#94a3b8' : '#64748b'}
                 angle={-45}
                 textAnchor="end"
                 height={100}
                 fontSize={12}
+                fontWeight={600}
               />
-              <YAxis stroke="#9ca3af" domain={[0, 100]} />
+              <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} domain={[0, 100]} fontWeight={600} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#1f2937',
-                  border: '1px solid #374151',
+                  backgroundColor: isDark ? '#0f172a' : '#ffffff',
+                  border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
                   borderRadius: '8px',
+                  fontWeight: 600,
+                  color: isDark ? '#f1f5f9' : '#1e293b'
                 }}
                 formatter={(value: number, name: string, props: any) => [
                   `${value}%`,
@@ -100,12 +107,12 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
       {/* Weak Topics & Suggestions */}
       <div className="grid md:grid-cols-2 gap-6">
         {result.weakTopics.length > 0 && (
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-            <h3 className="text-xl font-bold text-gray-100 mb-4">Topics to Review</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-red-100 dark:border-red-950/20 shadow-sm">
+            <h3 className="text-xl font-extrabold text-indigo-950 dark:text-slate-100 mb-4">Topics to Review</h3>
             <ul className="space-y-2">
               {result.weakTopics.map((topic, index) => (
-                <li key={index} className="flex items-center gap-2 text-gray-300">
-                  <span className="text-red-400">•</span>
+                <li key={index} className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
+                  <span className="text-red-500 font-bold">•</span>
                   <span>{topic}</span>
                 </li>
               ))}
@@ -113,11 +120,11 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
           </div>
         )}
 
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-          <h3 className="text-xl font-bold text-gray-100 mb-4">Revision Suggestions</h3>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-indigo-100 dark:border-slate-800 shadow-sm">
+          <h3 className="text-xl font-extrabold text-indigo-950 dark:text-slate-100 mb-4">Revision Suggestions</h3>
           <ul className="space-y-2">
             {result.revisionSuggestions.map((suggestion, index) => (
-              <li key={index} className="text-gray-300 text-sm leading-relaxed">
+              <li key={index} className="text-slate-600 dark:text-slate-400 font-medium text-sm leading-relaxed">
                 {suggestion}
               </li>
             ))}
@@ -129,13 +136,13 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
       <div className="flex gap-4">
         <button
           onClick={handleExportJSON}
-          className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+          className="flex-1 bg-white dark:bg-slate-900 border-2 border-indigo-100 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold py-4 px-6 rounded-xl transition-colors shadow-sm"
         >
           Export Results (JSON)
         </button>
         <button
           onClick={onRetake}
-          className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+          className="flex-1 bg-cta-500 hover:bg-cta-600 text-white font-bold py-4 px-6 rounded-xl transition-colors shadow-sm"
         >
           Retake Quiz
         </button>

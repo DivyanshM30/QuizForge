@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import QuizHistory from '@/components/QuizHistory';
 import Link from 'next/link';
 import Image from 'next/image';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function HistoryPage() {
   const { status } = useSession();
@@ -19,43 +20,38 @@ export default function HistoryPage() {
 
   return (
     <main className="min-h-screen">
-      {/* Background glowing effects */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-32 -left-24 h-96 w-96 rounded-full bg-primary-500/15 blur-3xl" />
-        <div className="absolute top-40 -right-24 h-[32rem] w-[32rem] rounded-full bg-fuchsia-500/10 blur-3xl" />
-        <div className="absolute bottom-[-8rem] left-1/3 h-[28rem] w-[28rem] rounded-full bg-cyan-500/10 blur-3xl" />
-      </div>
 
       {/* Global Sticky Navigation Header */}
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-slate-950/40 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-indigo-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-4 py-3 md:px-8">
           <div className="flex items-center justify-between gap-3">
             <Link href="/" className="flex items-center gap-3">
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-lg shadow-primary-500/20">
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-sm">
                 <Image src="/logo.png" alt="QuizForge Logo" width={40} height={40} className="object-cover" />
               </div>
               <div className="leading-tight">
-                <div className="text-sm font-semibold text-gray-100">QuizForge AI</div>
-                <div className="text-xs text-gray-400">Upload → Generate → Simulate</div>
+                <div className="text-sm font-bold text-indigo-950 dark:text-slate-100">QuizForge AI</div>
+                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Upload → Generate → Simulate</div>
               </div>
             </Link>
 
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <Link
                 href="/upload"
-                className="hidden sm:inline-flex bg-white/5 hover:bg-white/10 text-gray-100 font-semibold px-4 py-2 rounded-lg transition-colors border border-white/10 mr-2"
+                className="hidden sm:inline-flex bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold px-4 py-2 rounded-lg transition-colors border border-indigo-100 dark:border-slate-800 shadow-sm mr-2"
               >
                 Dashboard
               </Link>
               <Link
                 href="/upload"
-                className="inline-flex bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+                className="inline-flex bg-primary-600 hover:bg-primary-700 text-white font-bold px-4 py-2 rounded-lg transition-colors shadow-sm"
               >
                 New Quiz
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
-                className="hidden sm:inline-flex bg-white/5 hover:bg-white/10 text-gray-100 font-semibold px-4 py-2 rounded-lg transition-colors border border-white/10 ml-2"
+                className="hidden sm:inline-flex bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold px-4 py-2 rounded-lg transition-colors border border-indigo-100 dark:border-slate-800 shadow-sm ml-2"
               >
                 Sign out
               </button>

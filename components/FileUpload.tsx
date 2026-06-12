@@ -92,15 +92,15 @@ export default function FileUpload({
         {...getRootProps()}
         className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all ${
           isDragActive
-            ? 'border-primary-500 bg-primary-500/10 scale-105'
-            : 'border-gray-600 bg-gray-800/50 hover:border-primary-500/50 hover:bg-gray-800/70'
+            ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/20 scale-[1.02]'
+            : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-primary-400 dark:hover:border-primary-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
         }`}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-primary-500/20 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-slate-800 flex items-center justify-center">
             <svg
-              className="w-8 h-8 text-primary-400"
+              className="w-8 h-8 text-primary-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -114,11 +114,11 @@ export default function FileUpload({
             </svg>
           </div>
           <div>
-            <p className="text-xl font-semibold text-gray-200 mb-2">
+            <p className="text-xl font-bold text-indigo-950 dark:text-slate-100 mb-2">
               {isDragActive ? 'Drop your file here' : 'Drag & drop your study document'}
             </p>
-            <p className="text-gray-400 mb-4">or click to browse</p>
-            <p className="text-sm text-gray-500">
+            <p className="text-slate-600 dark:text-slate-300 font-medium mb-4">or click to browse</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
               Supports PDF, DOCX, PPT (Max 10MB)
             </p>
           </div>
@@ -126,8 +126,8 @@ export default function FileUpload({
       </div>
 
       {error && (
-        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="mt-4 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-lg shadow-sm">
+          <p className="text-red-600 font-medium text-sm">{error}</p>
         </div>
       )}
     </div>

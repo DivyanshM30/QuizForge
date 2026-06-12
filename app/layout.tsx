@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Fira_Code, Fira_Sans } from 'next/font/google';
 import { Providers } from './providers';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const firaCode = Fira_Code({ subsets: ['latin'], variable: '--font-fira-code' });
+const firaSans = Fira_Sans({ weight: ['300', '400', '500', '600', '700'], subsets: ['latin'], variable: '--font-fira-sans' });
 
 export const metadata: Metadata = {
   title: 'QuizForge AI',
@@ -17,10 +18,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${firaCode.variable} ${firaSans.variable} font-sans`}>
         <Providers>
-          <div className="min-h-screen bg-gradient-to-b from-[#080a12] via-[#0f1423] to-[#080a12]">
+          <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-indigo-950 dark:text-slate-100">
             {children}
           </div>
         </Providers>

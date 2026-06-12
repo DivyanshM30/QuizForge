@@ -1,11 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 8, 10, 18;
-  --background-end-rgb: 15, 20, 35;
+  --foreground-rgb: 30, 27, 75; /* Indigo 950 */
+  --background-start-rgb: 248, 250, 252; /* Slate 50 */
+  --background-end-rgb: 238, 242, 255; /* Indigo 50 */
+}
+
+.dark {
+  --foreground-rgb: 241, 245, 249; /* Slate 100 */
+  --background-start-rgb: 9, 9, 11; /* Zinc 950 */
+  --background-end-rgb: 15, 23, 42; /* Slate 900 */
 }
 
 * {
@@ -26,39 +34,27 @@ body {
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: rgb(var(--background-start-rgb));
   min-height: 100vh;
+  font-family: 'Fira Sans', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Fira Code', monospace;
 }
 
 @layer utilities {
-  .glass {
-    background: rgba(31, 41, 55, 0.5);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .glass-strong {
-    background: rgba(31, 41, 55, 0.8);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
   .bg-grid {
     background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
     background-size: 48px 48px;
     background-position: center;
   }
-
-  .mask-fade {
-    -webkit-mask-image: radial-gradient(ellipse at center, #000 40%, transparent 75%);
-    mask-image: radial-gradient(ellipse at center, #000 40%, transparent 75%);
+  .dark .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   }
 }
 

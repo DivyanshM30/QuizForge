@@ -13,6 +13,7 @@ import { QuizConfig as QuizConfigType, Question, QuizResult } from '@/lib/types'
 import { createQuizResult } from '@/lib/quiz-utils';
 import Link from 'next/link';
 import Image from 'next/image';
+import ThemeToggle from '@/components/ThemeToggle';
 
 type Step = 'upload' | 'config' | 'quiz' | 'results';
 
@@ -123,41 +124,38 @@ export default function UploadPage() {
 
   return (
     <main className="min-h-screen">
-      <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-32 -left-24 h-96 w-96 rounded-full bg-primary-500/15 blur-3xl" />
-        <div className="absolute top-40 -right-24 h-[32rem] w-[32rem] rounded-full bg-fuchsia-500/10 blur-3xl" />
-        <div className="absolute bottom-[-8rem] left-1/3 h-[28rem] w-[28rem] rounded-full bg-cyan-500/10 blur-3xl" />
-      </div>
 
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-slate-950/40 backdrop-blur">
+
+      <header className="sticky top-0 z-40 border-b border-indigo-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-4 py-3 md:px-8">
           <div className="flex items-center justify-between gap-3">
             <Link href="/" className="flex items-center gap-3">
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-lg shadow-primary-500/20">
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-sm">
                 <Image src="/logo.png" alt="QuizForge Logo" width={40} height={40} className="object-cover" />
               </div>
               <div className="leading-tight">
-                <div className="text-sm font-semibold text-gray-100">QuizForge AI</div>
-                <div className="text-xs text-gray-400">Upload → Generate → Simulate</div>
+                <div className="text-sm font-bold text-indigo-950 dark:text-slate-100">QuizForge AI</div>
+                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Upload → Generate → Simulate</div>
               </div>
             </Link>
 
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <Link
                 href="/history"
-                className="hidden sm:inline-flex bg-white/5 hover:bg-white/10 text-gray-100 font-semibold px-4 py-2 rounded-lg transition-colors border border-white/10"
+                className="hidden sm:inline-flex bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold px-4 py-2 rounded-lg transition-colors border border-indigo-100 dark:border-slate-800 shadow-sm"
               >
                 History
               </Link>
               <button
                 onClick={handleNewQuiz}
-                className="inline-flex bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+                className="inline-flex bg-primary-600 hover:bg-primary-700 text-white font-bold px-4 py-2 rounded-lg transition-colors shadow-sm"
               >
                 New Quiz
               </button>
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
-                className="hidden sm:inline-flex bg-white/5 hover:bg-white/10 text-gray-100 font-semibold px-4 py-2 rounded-lg transition-colors border border-white/10 ml-2"
+                className="hidden sm:inline-flex bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold px-4 py-2 rounded-lg transition-colors border border-indigo-100 dark:border-slate-800 ml-2 shadow-sm"
               >
                 Sign out
               </button>
@@ -168,19 +166,19 @@ export default function UploadPage() {
 
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
         {error && (
-          <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/30 p-4">
-            <p className="text-red-300">{error}</p>
+          <div className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 shadow-sm">
+            <p className="text-red-600 font-medium">{error}</p>
           </div>
         )}
 
         <div className="w-full">
           {step === 'upload' && (
             <div className="fade-in">
-              <div className="mb-6">
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-50 tracking-tight">
+              <div className="mb-6 text-center md:text-left">
+                <h1 className="text-3xl sm:text-4xl font-extrabold text-indigo-950 dark:text-slate-100 tracking-tight">
                   Upload your study material
                 </h1>
-                <p className="text-gray-300 mt-2">
+                <p className="text-slate-600 dark:text-slate-300 font-medium mt-2">
                   We’ll extract text and generate a quiz with explanations and analytics.
                 </p>
               </div>
