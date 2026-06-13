@@ -3,100 +3,79 @@
 import { QuizResult } from '@/lib/types';
 import { formatTime } from '@/lib/quiz-utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { useTheme } from 'next-themes';
+import { Download, RotateCcw } from 'lucide-react';
 
 interface ResultsDashboardProps {
   result: QuizResult;
   onRetake: () => void;
 }
 
+const getBarColor = (pct: number) => pct >= 80 ? '#4ade80' : pct >= 60 ? '#facc15' : '#f87171';
+
 export default function ResultsDashboard({ result, onRetake }: ResultsDashboardProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const chartData = result.topicPerformance.map((t) => ({
+    topic: t.topic.length > 14 ? t.topic.slice(0, 14) + '…' : t.topic,
+    percentage: t.percentage,
+    fullTopic: t.topic,
+  }));
 
   const handleExportJSON = () => {
-    const dataStr = JSON.stringify(result, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `quiz-result-${result.id}.json`;
-    link.click();
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `quiz-result-${result.id}.json`;
+    a.click();
     URL.revokeObjectURL(url);
   };
 
-  const chartData = result.topicPerformance.map((topic) => ({
-    topic: topic.topic.length > 15 ? topic.topic.substring(0, 15) + '...' : topic.topic,
-    percentage: topic.percentage,
-    fullTopic: topic.topic,
-  }));
-
-  const getColor = (percentage: number) => {
-    if (percentage >= 80) return '#10b981'; // green
-    if (percentage >= 60) return '#f59e0b'; // yellow
-    return '#ef4444'; // red
-  };
+  /* Score ring colour */
+  const scoreColor = result.accuracy >= 80 ? 'text-green-400' : result.accuracy >= 60 ? 'text-yellow-400' : 'text-red-400';
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6">
-      {/* Score Summary */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-indigo-100 dark:border-slate-800 shadow-sm">
-        <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-indigo-950 dark:text-slate-100 mb-4">Quiz Results</h2>
-          <div className="flex items-center justify-center gap-8 flex-wrap">
-            <div>
-              <div className="text-5xl font-extrabold text-primary-600 dark:text-primary-400">
-                {result.score}/{result.totalQuestions}
-              </div>
-              <div className="text-slate-500 dark:text-slate-400 font-bold text-sm mt-1 uppercase tracking-wider">Score</div>
+    <div className="w-full max-w-4xl mx-auto space-y-5">
+
+      {/* Score summary */}
+      <div className="liquid-glass rounded-3xl p-8">
+        <p className="text-white/40 text-xs font-medium uppercase tracking-widest text-center mb-6">Results</p>
+        <div className="flex flex-wrap justify-center gap-10">
+          <div className="text-center">
+            <div className={`text-5xl font-bold tabular-nums ${scoreColor}`}>
+              {result.score}<span className="text-white/20 text-3xl">/{result.totalQuestions}</span>
             </div>
-            <div>
-              <div className="text-5xl font-extrabold text-primary-600 dark:text-primary-400">{result.accuracy}%</div>
-              <div className="text-slate-500 dark:text-slate-400 font-bold text-sm mt-1 uppercase tracking-wider">Accuracy</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                {formatTime(result.timeTaken)}
-              </div>
-              <div className="text-slate-500 dark:text-slate-400 font-bold text-sm mt-1 uppercase tracking-wider">Time Taken</div>
-            </div>
+            <div className="text-white/40 text-xs uppercase tracking-widest mt-2">Score</div>
+          </div>
+          <div className="text-center">
+            <div className={`text-5xl font-bold tabular-nums ${scoreColor}`}>{result.accuracy}%</div>
+            <div className="text-white/40 text-xs uppercase tracking-widest mt-2">Accuracy</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-semibold text-white/70 tabular-nums">{formatTime(result.timeTaken)}</div>
+            <div className="text-white/40 text-xs uppercase tracking-widest mt-2">Time taken</div>
           </div>
         </div>
       </div>
 
-      {/* Topic Performance Chart */}
-      {result.topicPerformance.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-indigo-100 dark:border-slate-800 shadow-sm">
-          <h3 className="text-xl font-extrabold text-indigo-950 dark:text-slate-100 mb-6">Topic-wise Performance</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+      {/* Topic chart */}
+      {chartData.length > 0 && (
+        <div className="liquid-glass rounded-3xl p-6 space-y-4">
+          <p className="text-white/40 text-xs font-medium uppercase tracking-widest">Topic Performance</p>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 60, left: 0 }}>
+              <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
               <XAxis
-                dataKey="topic"
-                stroke={isDark ? '#94a3b8' : '#64748b'}
-                angle={-45}
-                textAnchor="end"
-                height={100}
-                fontSize={12}
-                fontWeight={600}
+                dataKey="topic" stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
+                angle={-40} textAnchor="end" height={70}
               />
-              <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} domain={[0, 100]} fontWeight={600} />
+              <YAxis stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} domain={[0, 100]} width={30} />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: isDark ? '#0f172a' : '#ffffff',
-                  border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  color: isDark ? '#f1f5f9' : '#1e293b'
-                }}
-                formatter={(value: number, name: string, props: any) => [
-                  `${value}%`,
-                  props.payload.fullTopic,
-                ]}
+                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', fontSize: 12 }}
+                formatter={(value: number, _: any, props: any) => [`${value}%`, props.payload.fullTopic]}
               />
-              <Bar dataKey="percentage" radius={[8, 8, 0, 0]}>
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={getColor(entry.percentage)} />
+              <Bar dataKey="percentage" radius={[6, 6, 0, 0]}>
+                {chartData.map((entry, i) => (
+                  <Cell key={i} fill={getBarColor(entry.percentage)} fillOpacity={0.85} />
                 ))}
               </Bar>
             </BarChart>
@@ -104,47 +83,46 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
         </div>
       )}
 
-      {/* Weak Topics & Suggestions */}
-      <div className="grid md:grid-cols-2 gap-6">
+      {/* Weak topics + suggestions */}
+      <div className="grid md:grid-cols-2 gap-5">
         {result.weakTopics.length > 0 && (
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-red-100 dark:border-red-950/20 shadow-sm">
-            <h3 className="text-xl font-extrabold text-indigo-950 dark:text-slate-100 mb-4">Topics to Review</h3>
+          <div className="liquid-glass rounded-3xl p-6 space-y-3">
+            <p className="text-white/40 text-xs font-medium uppercase tracking-widest">Topics to Review</p>
             <ul className="space-y-2">
-              {result.weakTopics.map((topic, index) => (
-                <li key={index} className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-                  <span className="text-red-500 font-bold">•</span>
-                  <span>{topic}</span>
+              {result.weakTopics.map((topic, i) => (
+                <li key={i} className="flex items-start gap-2 text-white/70 text-sm">
+                  <span className="text-red-400 mt-0.5 flex-shrink-0">•</span>
+                  {topic}
                 </li>
               ))}
             </ul>
           </div>
         )}
-
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-indigo-100 dark:border-slate-800 shadow-sm">
-          <h3 className="text-xl font-extrabold text-indigo-950 dark:text-slate-100 mb-4">Revision Suggestions</h3>
+        <div className="liquid-glass rounded-3xl p-6 space-y-3">
+          <p className="text-white/40 text-xs font-medium uppercase tracking-widest">Revision Suggestions</p>
           <ul className="space-y-2">
-            {result.revisionSuggestions.map((suggestion, index) => (
-              <li key={index} className="text-slate-600 dark:text-slate-400 font-medium text-sm leading-relaxed">
-                {suggestion}
-              </li>
+            {result.revisionSuggestions.map((s, i) => (
+              <li key={i} className="text-white/60 text-sm leading-relaxed">{s}</li>
             ))}
           </ul>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-4">
+      {/* Actions */}
+      <div className="flex gap-3">
         <button
           onClick={handleExportJSON}
-          className="flex-1 bg-white dark:bg-slate-900 border-2 border-indigo-100 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold py-4 px-6 rounded-xl transition-colors shadow-sm"
+          className="flex-1 flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-white/70 font-medium py-3.5 rounded-xl hover:bg-white/10 hover:text-white transition-all cursor-pointer text-sm"
         >
-          Export Results (JSON)
+          <Download size={15} />
+          Export JSON
         </button>
         <button
           onClick={onRetake}
-          className="flex-1 bg-cta-500 hover:bg-cta-600 text-white font-bold py-4 px-6 rounded-xl transition-colors shadow-sm"
+          className="flex-1 flex items-center justify-center gap-2 bg-white text-black font-semibold py-3.5 rounded-xl hover:bg-white/90 transition-all cursor-pointer text-sm"
         >
-          Retake Quiz
+          <RotateCcw size={15} />
+          New Quiz
         </button>
       </div>
     </div>

@@ -19,11 +19,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${firaCode.variable} ${firaSans.variable} font-sans`}>
+      <body className={`${firaCode.variable} ${firaSans.variable} font-sans bg-black text-slate-100`}>
         <Providers>
-          <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-indigo-950 dark:text-slate-100">
-            {children}
-          </div>
+          {children}
         </Providers>
       </body>
     </html>

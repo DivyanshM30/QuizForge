@@ -11,15 +11,7 @@ interface QuizInterfaceProps {
 }
 
 export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
-  const {
-    session,
-    getCurrentQuestion,
-    submitAnswer,
-    nextQuestion,
-    getRemainingTime,
-    updateTimer,
-    endQuiz,
-  } = useQuizStore();
+  const { session, getCurrentQuestion, submitAnswer, nextQuestion, getRemainingTime, updateTimer, endQuiz } = useQuizStore();
 
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -39,31 +31,22 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
 
   useEffect(() => {
     if (!session) return;
-
     const interval = setInterval(() => {
       updateTimer();
-      const remaining = getRemainingTime();
-      if (remaining <= 0) {
+      if (getRemainingTime() <= 0) {
         clearInterval(interval);
         handleTimeUp();
       }
     }, 1000);
-
     return () => clearInterval(interval);
   }, [session, updateTimer, getRemainingTime]);
 
-  if (!session || !currentQuestion) {
-    return null;
-  }
+  if (!session || !currentQuestion) return null;
 
-  const handleAnswerSelect = (answer: string) => {
-    if (hasAnswered) return;
-    setSelectedAnswer(answer);
-  };
+  const handleAnswerSelect = (answer: string) => { if (!hasAnswered) setSelectedAnswer(answer); };
 
   const handleSubmit = () => {
     if (!selectedAnswer || hasAnswered) return;
-
     submitAnswer(selectedAnswer);
     setHasAnswered(true);
     setShowFeedback(true);
@@ -73,33 +56,42 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
     setShowFeedback(false);
     setSelectedAnswer(null);
     setHasAnswered(false);
-
-    if (currentIndex < totalQuestions - 1) {
-      nextQuestion();
-    } else {
-      // Quiz completed
-      onComplete();
-    }
+    if (currentIndex < totalQuestions - 1) nextQuestion();
+    else onComplete();
   };
 
-  const handleTimeUp = () => {
-    endQuiz();
-    onComplete();
-  };
+  const handleTimeUp = () => { endQuiz(); onComplete(); };
 
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
+  /* Option state → styling */
+  const optionClass = (option: 'a' | 'b' | 'c' | 'd') => {
+    const isSelected = selectedAnswer === option;
+    const isCorrect = currentQuestion.correctAnswer === option;
+    const isUserAnswer = userAnswer === option;
+    const base = 'w-full text-left p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center gap-3 ';
+
+    if (hasAnswered) {
+      if (isCorrect) return base + 'border-green-500/60 bg-green-500/10 text-green-300';
+      if (isUserAnswer && !isCorrect) return base + 'border-red-500/60 bg-red-500/10 text-red-300';
+      return base + 'border-white/5 bg-white/[0.02] text-white/30';
+    }
+    if (isSelected) return base + 'border-white/50 bg-white/10 text-white';
+    return base + 'border-white/10 bg-white/[0.03] text-white/70 hover:border-white/25 hover:bg-white/[0.07] hover:text-white';
+  };
+
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      {/* Header with Timer and Progress */}
-      <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="text-slate-600 dark:text-slate-300 font-bold">
-            Question {currentIndex + 1} of {totalQuestions}
-          </div>
-          <div className="w-32 h-2 bg-indigo-100 dark:bg-slate-800 rounded-full overflow-hidden">
+    <div className="w-full max-w-3xl mx-auto space-y-5">
+
+      {/* Header: progress + timer */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-1">
+          <span className="text-white/50 text-sm font-medium tabular-nums whitespace-nowrap">
+            {currentIndex + 1} <span className="text-white/25">/ {totalQuestions}</span>
+          </span>
+          <div className="flex-1 h-px bg-white/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-primary-600 transition-all duration-300"
+              className="h-full bg-white/70 rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -107,86 +99,61 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
         <Timer onTimeUp={handleTimeUp} />
       </div>
 
-      {/* Question Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-indigo-100 dark:border-slate-800 shadow-sm mb-6">
-        <div className="mb-6">
-          <div className="text-sm text-primary-600 dark:text-primary-400 font-bold mb-2">
-            Topic: {currentQuestion.topic} • Difficulty: {currentQuestion.difficulty}
-          </div>
-          <h2 className="text-2xl font-extrabold text-indigo-950 dark:text-slate-100 leading-relaxed">
+      {/* Question card */}
+      <div className="liquid-glass-card rounded-3xl p-7 space-y-6">
+        <div className="space-y-2">
+          <p className="text-white/40 text-xs font-medium uppercase tracking-widest">
+            {currentQuestion.topic} · {currentQuestion.difficulty}
+          </p>
+          <h2 className="text-xl font-semibold text-white leading-relaxed">
             {currentQuestion.question}
           </h2>
         </div>
 
         {/* Options */}
-        <div className="space-y-3">
-          {(['a', 'b', 'c', 'd'] as const).map((option) => {
-            const optionText = currentQuestion.options[option];
-            const isSelected = selectedAnswer === option;
-            const isCorrect = currentQuestion.correctAnswer === option;
-            const isUserAnswer = userAnswer === option;
-            const showResult = hasAnswered;
-
-            let buttonClass =
-              'w-full text-left p-4 rounded-xl border-2 transition-all font-bold ';
-            if (showResult) {
-              if (isCorrect) {
-                buttonClass += 'bg-green-50 dark:bg-green-950/20 border-green-500 text-green-700 dark:text-green-300';
-              } else if (isUserAnswer && !isCorrect) {
-                buttonClass += 'bg-red-50 dark:bg-red-950/20 border-red-500 text-red-700 dark:text-red-300';
-              } else {
-                buttonClass += 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600';
-              }
-            } else {
-              buttonClass += isSelected
-                ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-500 text-primary-700 dark:text-primary-300 shadow-sm scale-[1.01]'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-primary-300 dark:hover:border-primary-550 hover:bg-slate-50 dark:hover:bg-slate-800/50';
-            }
-
-            return (
-              <button
-                key={option}
-                onClick={() => handleAnswerSelect(option)}
-                disabled={hasAnswered}
-                className={buttonClass}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-lg">{option.toUpperCase()}.</span>
-                  <span>{optionText}</span>
-                  {showResult && isCorrect && (
-                    <span className="ml-auto text-green-600 font-bold text-xl">✓</span>
-                  )}
-                  {showResult && isUserAnswer && !isCorrect && (
-                    <span className="ml-auto text-red-600 font-bold text-xl">✗</span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
+        <div className="space-y-2.5">
+          {(['a', 'b', 'c', 'd'] as const).map((option) => (
+            <button
+              key={option}
+              onClick={() => handleAnswerSelect(option)}
+              disabled={hasAnswered}
+              className={optionClass(option)}
+            >
+              <span className="w-7 h-7 rounded-lg border border-current/30 flex items-center justify-center text-xs font-bold flex-shrink-0 uppercase">
+                {option}
+              </span>
+              <span className="text-sm leading-relaxed">{currentQuestion.options[option]}</span>
+              {hasAnswered && currentQuestion.correctAnswer === option && (
+                <span className="ml-auto text-green-400 text-lg leading-none">✓</span>
+              )}
+              {hasAnswered && userAnswer === option && userAnswer !== currentQuestion.correctAnswer && (
+                <span className="ml-auto text-red-400 text-lg leading-none">✗</span>
+              )}
+            </button>
+          ))}
         </div>
 
-        {/* Submit Button */}
-        {!hasAnswered && (
+        {/* Action button */}
+        {!hasAnswered ? (
           <button
             onClick={handleSubmit}
             disabled={!selectedAnswer}
-            className="mt-6 w-full bg-cta-500 hover:bg-cta-600 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition-all shadow-sm"
+            className="w-full bg-white text-black font-semibold py-3.5 rounded-xl
+              hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
             Submit Answer
           </button>
-        )}
-
-        {hasAnswered && currentIndex < totalQuestions - 1 && (
+        ) : currentIndex < totalQuestions - 1 ? (
           <button
             onClick={handleContinue}
-            className="mt-6 w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-sm"
+            className="w-full bg-white/10 border border-white/20 text-white font-semibold py-3.5 rounded-xl
+              hover:bg-white/15 transition-all cursor-pointer"
           >
-            Next Question
+            Next Question →
           </button>
-        )}
+        ) : null}
       </div>
 
-      {/* Feedback Modal */}
       <FeedbackModal
         question={currentQuestion}
         userAnswer={userAnswer}

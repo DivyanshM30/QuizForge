@@ -12,34 +12,48 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { QuizConfig as QuizConfigType, Question, QuizResult } from '@/lib/types';
 import { createQuizResult } from '@/lib/quiz-utils';
 import Link from 'next/link';
-import Image from 'next/image';
-import ThemeToggle from '@/components/ThemeToggle';
+import { History, LogOut, Plus, AlertCircle } from 'lucide-react';
+import AppNav from '@/components/AppNav';
 
 type Step = 'upload' | 'config' | 'quiz' | 'results';
+
+/* ── Step indicator ── */
+const STEP_LABELS: Record<Step, string> = {
+  upload:  '01 · Upload',
+  config:  '02 · Configure',
+  quiz:    '03 · Quiz',
+  results: '04 · Results',
+};
+
+function StepBadge({ current, step }: { current: Step; step: Step }) {
+  const steps: Step[] = ['upload', 'config', 'quiz', 'results'];
+  const ci = steps.indexOf(current);
+  const si = steps.indexOf(step);
+  const done = si < ci;
+  const active = si === ci;
+  return (
+    <span
+      className={`text-xs font-medium tracking-widest transition-colors ${
+        active ? 'text-white' : done ? 'text-white/40 line-through' : 'text-white/20'
+      }`}
+    >
+      {STEP_LABELS[step]}
+    </span>
+  );
+}
 
 export default function UploadPage() {
   const { data: sessionData, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
+    if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
 
   const {
-    documentText,
-    session,
-    isAnalyzing,
-    isGenerating,
-    error,
-    setDocumentText,
-    setAnalyzing,
-    setGenerating,
-    setError,
-    startQuiz,
-    endQuiz,
-    resetQuiz,
+    documentText, session, isAnalyzing, isGenerating, error,
+    setDocumentText, setAnalyzing, setGenerating, setError,
+    startQuiz, endQuiz, resetQuiz,
   } = useQuizStore();
 
   const [step, setStep] = useState<Step>('upload');
@@ -58,26 +72,19 @@ export default function UploadPage() {
   };
 
   const handleStartQuiz = async (config: QuizConfigType) => {
-    if (!documentText) {
-      setError('No document text available');
-      return;
-    }
-
+    if (!documentText) { setError('No document text available'); return; }
     setGenerating(true);
     setError(null);
-
     try {
       const response = await fetch('/api/generate-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ documentText, config }),
       });
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || 'Failed to generate questions');
       }
-
       const data = await response.json();
       setQuestions(data.questions);
       startQuiz(data.questions, config);
@@ -91,27 +98,16 @@ export default function UploadPage() {
 
   const handleQuizComplete = async () => {
     if (!session) return;
-
     const timeTaken = Math.floor((Date.now() - session.startTime) / 1000);
     const quizResult = createQuizResult(
-      session.questions,
-      session.userAnswers,
-      timeTaken,
-      session.timeLimit,
-      session.config
+      session.questions, session.userAnswers, timeTaken, session.timeLimit, session.config
     );
-
     setResult(quizResult);
-    
-    // Save to database in the background (fire-and-forget)
     fetch('/api/save-quiz', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(quizResult),
-    }).catch(error => {
-      console.error('Failed to save quiz to database:', error);
-    });
-    
+    }).catch(console.error);
     endQuiz();
     setStep('results');
   };
@@ -122,100 +118,100 @@ export default function UploadPage() {
     setStep('upload');
   };
 
+  const navActions = (
+    <button
+      onClick={handleNewQuiz}
+      className="flex items-center gap-1.5 liquid-glass rounded-full px-4 py-1.5 text-white text-sm font-medium hover:bg-white/5 transition-colors cursor-pointer"
+    >
+      <Plus size={14} />
+      New Quiz
+    </button>
+  );
+
   return (
-    <main className="min-h-screen">
+    <div className="min-h-screen bg-black flex flex-col text-white">
+      {/* Subtle ambient glow */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-white/[0.025] blur-3xl" />
+      </div>
 
+      <AppNav actions={navActions} />
 
-      <header className="sticky top-0 z-40 border-b border-indigo-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-7xl px-4 py-3 md:px-8">
-          <div className="flex items-center justify-between gap-3">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-sm">
-                <Image src="/logo.png" alt="QuizForge Logo" width={40} height={40} className="object-cover" />
-              </div>
-              <div className="leading-tight">
-                <div className="text-sm font-bold text-indigo-950 dark:text-slate-100">QuizForge AI</div>
-                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Upload → Generate → Simulate</div>
-              </div>
-            </Link>
+      {/* Step tracker */}
+      <div className="relative z-10 flex justify-center gap-8 px-4 pb-2">
+        {(['upload', 'config', 'quiz', 'results'] as Step[]).map((s) => (
+          <StepBadge key={s} current={step} step={s} />
+        ))}
+      </div>
 
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <Link
-                href="/history"
-                className="hidden sm:inline-flex bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold px-4 py-2 rounded-lg transition-colors border border-indigo-100 dark:border-slate-800 shadow-sm"
-              >
-                History
-              </Link>
-              <button
-                onClick={handleNewQuiz}
-                className="inline-flex bg-primary-600 hover:bg-primary-700 text-white font-bold px-4 py-2 rounded-lg transition-colors shadow-sm"
-              >
-                New Quiz
-              </button>
-              <button
-                onClick={() => signOut({ callbackUrl: '/' })}
-                className="hidden sm:inline-flex bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold px-4 py-2 rounded-lg transition-colors border border-indigo-100 dark:border-slate-800 ml-2 shadow-sm"
-              >
-                Sign out
-              </button>
-            </div>
+      {/* Error */}
+      {error && (
+        <div className="relative z-10 mx-auto max-w-3xl w-full px-4 mt-4">
+          <div className="liquid-glass rounded-2xl px-4 py-3 flex items-center gap-2.5 text-red-400 text-sm">
+            <AlertCircle size={16} className="flex-shrink-0" />
+            {error}
           </div>
         </div>
-      </header>
+      )}
 
-      <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
-        {error && (
-          <div className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 shadow-sm">
-            <p className="text-red-600 font-medium">{error}</p>
+      {/* Main content */}
+      <main className="relative z-10 flex-1 mx-auto max-w-5xl w-full px-4 py-8 md:px-6 md:py-10">
+
+        {step === 'upload' && (
+          <div className="fade-in space-y-6">
+            <div className="text-center space-y-2 mb-8">
+              <h1
+                className="text-4xl md:text-5xl text-white tracking-tight"
+                style={{ fontFamily: "'Instrument Serif', serif" }}
+              >
+                Upload your material
+              </h1>
+              <p className="text-white/50 text-sm">
+                PDF, DOCX, or plain text — we'll extract the content and forge your quiz
+              </p>
+            </div>
+            <FileUpload
+              onFileUploaded={handleFileUpload}
+              onAnalysisComplete={handleFileAnalyzed}
+              isAnalyzing={isAnalyzing}
+            />
           </div>
         )}
 
-        <div className="w-full">
-          {step === 'upload' && (
-            <div className="fade-in">
-              <div className="mb-6 text-center md:text-left">
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-indigo-950 dark:text-slate-100 tracking-tight">
-                  Upload your study material
-                </h1>
-                <p className="text-slate-600 dark:text-slate-300 font-medium mt-2">
-                  We’ll extract text and generate a quiz with explanations and analytics.
-                </p>
+        {step === 'config' && (
+          <div className="fade-in">
+            <div className="text-center space-y-2 mb-8">
+              <h1
+                className="text-4xl md:text-5xl text-white tracking-tight"
+                style={{ fontFamily: "'Instrument Serif', serif" }}
+              >
+                Configure your quiz
+              </h1>
+              <p className="text-white/50 text-sm">
+                Choose difficulty, question count, and time limit
+              </p>
+            </div>
+            <QuizConfig onStart={handleStartQuiz} isGenerating={isGenerating} />
+            {isGenerating && (
+              <div className="mt-8">
+                <LoadingSpinner message="Generating questions with AI… this may take a moment." />
               </div>
+            )}
+          </div>
+        )}
 
-              <FileUpload
-                onFileUploaded={handleFileUpload}
-                onAnalysisComplete={handleFileAnalyzed}
-                isAnalyzing={isAnalyzing}
-              />
-            </div>
-          )}
+        {step === 'quiz' && session && (
+          <div className="fade-in">
+            <QuizInterface onComplete={handleQuizComplete} />
+          </div>
+        )}
 
-          {step === 'config' && (
-            <div className="fade-in">
-              <QuizConfig onStart={handleStartQuiz} isGenerating={isGenerating} />
-              {isGenerating && (
-                <div className="mt-6">
-                  <LoadingSpinner message="Generating questions with AI... This may take a moment." />
-                </div>
-              )}
-            </div>
-          )}
-
-          {step === 'quiz' && session && (
-            <div className="fade-in">
-              <QuizInterface onComplete={handleQuizComplete} />
-            </div>
-          )}
-
-          {step === 'results' && result && (
-            <div className="fade-in">
-              <ResultsDashboard result={result} onRetake={handleNewQuiz} />
-            </div>
-          )}
-        </div>
-      </div>
-    </main>
+        {step === 'results' && result && (
+          <div className="fade-in">
+            <ResultsDashboard result={result} onRetake={handleNewQuiz} />
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
-

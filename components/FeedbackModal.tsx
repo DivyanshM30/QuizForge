@@ -9,87 +9,63 @@ interface FeedbackModalProps {
   onContinue: () => void;
 }
 
-export default function FeedbackModal({
-  question,
-  userAnswer,
-  isOpen,
-  onContinue,
-}: FeedbackModalProps) {
+export default function FeedbackModal({ question, userAnswer, isOpen, onContinue }: FeedbackModalProps) {
   if (!isOpen) return null;
 
   const isCorrect = userAnswer === question.correctAnswer;
   const correctOption = question.options[question.correctAnswer];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-2xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center gap-4 mb-4">
-          {isCorrect ? (
-            <>
-              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-green-500 dark:text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-green-600 dark:text-green-400">Correct!</h3>
-                <p className="text-slate-500 dark:text-slate-400">Great job!</p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-red-500 dark:text-red-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-red-600 dark:text-red-400">Incorrect</h3>
-                <p className="text-slate-500 dark:text-slate-400">The correct answer is: {question.correctAnswer.toUpperCase()}</p>
-              </div>
-            </>
-          )}
-        </div>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+      <div className="liquid-glass rounded-3xl p-7 max-w-lg w-full space-y-5 animate-in fade-in zoom-in duration-200">
 
-        <div className="mb-4">
-          <p className="text-slate-700 dark:text-slate-300 font-medium mb-2">Correct Answer:</p>
-          <div className="bg-primary-50 dark:bg-primary-950/20 border border-primary-100 dark:border-primary-900/50 rounded-lg p-3">
-            <p className="text-primary-700 dark:text-primary-300">{correctOption}</p>
+        {/* Result header */}
+        <div className="flex items-center gap-4">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+            isCorrect ? 'bg-green-500/20' : 'bg-red-500/20'
+          }`}>
+            {isCorrect ? (
+              <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+          </div>
+          <div>
+            <h3 className={`text-xl font-semibold ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+              {isCorrect ? 'Correct!' : 'Incorrect'}
+            </h3>
+            <p className="text-white/40 text-sm">
+              {isCorrect ? 'Great job — keep it up.' : `Correct answer: ${question.correctAnswer.toUpperCase()}`}
+            </p>
           </div>
         </div>
 
+        {/* Correct answer */}
+        <div className="space-y-1.5">
+          <p className="text-white/50 text-xs font-medium uppercase tracking-widest">Correct Answer</p>
+          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white/80 text-sm leading-relaxed">
+            {correctOption}
+          </div>
+        </div>
+
+        {/* Explanation */}
         {question.explanation && (
-          <div className="mb-6">
-            <p className="text-slate-700 dark:text-slate-300 font-medium mb-2">Explanation:</p>
-            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{question.explanation}</p>
+          <div className="space-y-1.5">
+            <p className="text-white/50 text-xs font-medium uppercase tracking-widest">Explanation</p>
+            <p className="text-white/60 text-sm leading-relaxed">{question.explanation}</p>
           </div>
         )}
 
         <button
           onClick={onContinue}
-          className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+          className="w-full bg-white text-black font-semibold py-3.5 rounded-xl
+            hover:bg-white/90 transition-colors cursor-pointer"
         >
-          Continue
+          Continue →
         </button>
       </div>
     </div>

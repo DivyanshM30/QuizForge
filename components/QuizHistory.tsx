@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { QuizResult } from '@/lib/types';
 import { formatTime } from '@/lib/quiz-utils';
 import Link from 'next/link';
+import { Trash2, ChevronRight, FileText, Zap } from 'lucide-react';
 
 export default function QuizHistory() {
   const [history, setHistory] = useState<QuizResult[]>([]);
@@ -15,8 +16,7 @@ export default function QuizHistory() {
     try {
       const res = await fetch('/api/history');
       if (!res.ok) throw new Error('Failed to fetch history');
-      const data = await res.json();
-      setHistory(data);
+      setHistory(await res.json());
     } catch (err: any) {
       setError(err.message || 'An error occurred');
     } finally {
@@ -24,126 +24,101 @@ export default function QuizHistory() {
     }
   };
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
+  useEffect(() => { fetchHistory(); }, []);
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this quiz result?')) {
-      try {
-        const res = await fetch(`/api/history/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-          fetchHistory();
-        } else {
-          alert('Failed to delete history');
-        }
-      } catch (err) {
-        alert('An error occurred');
-      }
-    }
+    if (!confirm('Delete this quiz result?')) return;
+    try {
+      const res = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+      if (res.ok) fetchHistory();
+      else alert('Failed to delete');
+    } catch { alert('An error occurred'); }
   };
+
+  const accuracyColor = (acc: number) =>
+    acc >= 80 ? 'text-green-400' : acc >= 60 ? 'text-yellow-400' : 'text-red-400';
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-4xl mx-auto flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent" />
+      <div className="flex justify-center py-20">
+        <div className="w-8 h-8 border-2 border-white/10 border-t-white/60 rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error) {
-    return (
-      <div className="w-full max-w-4xl mx-auto text-center text-red-400 py-12">
-        {error}
-      </div>
-    );
+    return <p className="text-center text-red-400 py-12 text-sm">{error}</p>;
   }
 
   if (history.length === 0) {
     return (
-      <div className="w-full max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 border border-slate-200 dark:border-slate-800 shadow-sm text-center">
-          <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-primary-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-xl font-bold text-indigo-950 dark:text-slate-100 mb-2">No Quiz History</h3>
-          <p className="text-slate-500 dark:text-slate-400 mb-6 font-medium">Complete a quiz to see your results here.</p>
-          <Link
-            href="/upload"
-            className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-sm"
-          >
-            Start a New Quiz
-          </Link>
+      <div className="liquid-glass rounded-3xl p-16 text-center space-y-5 max-w-md mx-auto">
+        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto">
+          <FileText size={24} className="text-white/30" />
         </div>
+        <div className="space-y-1">
+          <h3 className="text-white font-medium">No quizzes yet</h3>
+          <p className="text-white/40 text-sm">Complete a quiz to see your history here.</p>
+        </div>
+        <Link
+          href="/upload"
+          className="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm cursor-pointer"
+        >
+          <Zap size={14} />
+          Start a Quiz
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-3xl font-extrabold text-indigo-950 dark:text-slate-100">Quiz History</h2>
-      </div>
-
-      <div className="space-y-4">
-        {history.map((quiz) => (
-          <div
-            key={quiz.id}
-            className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-md transition-all"
-          >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-4 mb-2">
-                  <div className="text-2xl font-bold text-primary-600">
-                    {quiz.score}/{quiz.totalQuestions}
-                  </div>
-                  <div className="text-lg font-bold text-indigo-950 dark:text-slate-100">
-                    {quiz.accuracy}% Accuracy
-                  </div>
-                  <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                    {formatTime(quiz.timeTaken)} / {formatTime(quiz.timeLimit)}
-                  </div>
-                </div>
-                <div className="text-sm font-medium text-slate-400 dark:text-slate-500">
-                  {new Date(quiz.createdAt || quiz.timestamp || Date.now()).toLocaleString()}
-                </div>
-                {quiz.weakTopics && quiz.weakTopics.length > 0 && (
-                  <div className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
-                    Weak topics: {quiz.weakTopics.slice(0, 3).join(', ')}
-                    {quiz.weakTopics.length > 3 && '...'}
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Link
-                  href={`/history/${quiz.id}`}
-                  className="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-sm"
-                >
-                  View Details
-                </Link>
-                <button
-                  onClick={() => handleDelete(quiz.id)}
-                  className="bg-white dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 font-bold py-2 px-4 rounded-lg transition-colors border border-red-200 dark:border-red-900/50 shadow-sm"
-                >
-                  Delete
-                </button>
-              </div>
+    <div className="space-y-3 max-w-4xl mx-auto">
+      {history.map((quiz) => (
+        <div
+          key={quiz.id}
+          className="liquid-glass rounded-2xl px-6 py-5 flex flex-col md:flex-row md:items-center gap-4 hover:bg-white/[0.03] transition-colors"
+        >
+          {/* Score + meta */}
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className={`text-2xl font-bold tabular-nums ${accuracyColor(quiz.accuracy)}`}>
+                {quiz.accuracy}%
+              </span>
+              <span className="text-white/50 text-sm">
+                {quiz.score}/{quiz.totalQuestions} correct
+              </span>
+              <span className="text-white/30 text-sm tabular-nums">
+                {formatTime(quiz.timeTaken)}
+              </span>
             </div>
+            <p className="text-white/30 text-xs tabular-nums">
+              {new Date(quiz.createdAt || quiz.timestamp || Date.now()).toLocaleString()}
+            </p>
+            {quiz.weakTopics?.length > 0 && (
+              <p className="text-white/30 text-xs truncate">
+                Weak: {quiz.weakTopics.slice(0, 3).join(', ')}{quiz.weakTopics.length > 3 ? '…' : ''}
+              </p>
+            )}
           </div>
-        ))}
-      </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => handleDelete(quiz.id)}
+              aria-label="Delete quiz"
+              className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-red-400 hover:border-red-500/30 transition-all cursor-pointer"
+            >
+              <Trash2 size={14} />
+            </button>
+            <Link
+              href={`/history/${quiz.id}`}
+              className="flex items-center gap-1.5 bg-white/8 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 font-medium px-4 py-2 rounded-xl transition-all text-sm cursor-pointer"
+            >
+              Details <ChevronRight size={14} />
+            </Link>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

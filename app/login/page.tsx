@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { ArrowRight, Mail, Lock, AlertCircle } from 'lucide-react';
+import AppNav from '@/components/AppNav';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,21 +18,15 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-
     try {
-      const res = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
-
+      const res = await signIn('credentials', { email, password, redirect: false });
       if (res?.error) {
         setError('Invalid email or password');
       } else {
         router.push('/upload');
         router.refresh();
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -40,71 +34,102 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex flex-col items-center">
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden shadow-sm mb-4">
-            <Image src="/logo.png" alt="QuizForge Logo" width={64} height={64} className="object-cover" />
+    <div className="min-h-screen bg-black flex flex-col">
+      {/* Subtle radial glow */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-white/[0.03] blur-3xl" />
+      </div>
+
+      <AppNav />
+
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm space-y-6">
+
+          {/* Heading */}
+          <div className="text-center space-y-1">
+            <h1
+              className="text-4xl text-white tracking-tight"
+              style={{ fontFamily: "'Instrument Serif', serif" }}
+            >
+              Welcome back
+            </h1>
+            <p className="text-white/50 text-sm">
+              Sign in to continue your learning streak
+            </p>
           </div>
-          <h2 className="mt-2 text-center text-3xl font-extrabold text-indigo-950 dark:text-slate-100">
-            Sign in to your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-slate-500 dark:text-slate-400">
-            Or{' '}
-            <Link href="/register" className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
-              create a new account
+
+          {/* Error */}
+          {error && (
+            <div className="liquid-glass rounded-2xl px-4 py-3 flex items-center gap-2.5 text-red-400 text-sm">
+              <AlertCircle size={16} className="flex-shrink-0" />
+              {error}
+            </div>
+          )}
+
+          {/* Card */}
+          <div className="liquid-glass rounded-3xl p-8 space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email */}
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="text-white/60 text-xs font-medium uppercase tracking-widest">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+                  <input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-white/25 text-sm outline-none focus:border-white/30 focus:bg-white/8 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="text-white/60 text-xs font-medium uppercase tracking-widest">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+                  <input
+                    id="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-white/25 text-sm outline-none focus:border-white/30 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-2 bg-white text-black rounded-xl py-3 text-sm font-semibold hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer mt-2"
+              >
+                {isLoading ? 'Signing in…' : (
+                  <>Sign in <ArrowRight size={15} /></>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Footer link */}
+          <p className="text-center text-white/40 text-sm">
+            No account yet?{' '}
+            <Link href="/register" className="text-white/70 hover:text-white transition-colors">
+              Create one
             </Link>
           </p>
         </div>
-        
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-lg text-center">
-            {error}
-          </div>
-        )}
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email-address" className="sr-only">Email address</label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-xl relative block w-full px-3 py-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 placeholder-slate-400 dark:placeholder-slate-500 text-indigo-950 dark:text-slate-100 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-colors"
-                placeholder="Email address"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-xl relative block w-full px-3 py-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 placeholder-slate-400 dark:placeholder-slate-500 text-indigo-950 dark:text-slate-100 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-colors"
-                placeholder="Password"
-              />
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 transition-all duration-200"
-            >
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );
