@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuizStore } from '@/store/quiz-store';
@@ -42,10 +42,21 @@ function StepBadge({ current, step }: { current: Step; step: Step }) {
   );
 }
 
+/* ── Reads ?step=config and notifies parent ── */
+function SearchParamsReader({ onConfigStep }: { onConfigStep: () => void }) {
+  const searchParams = useSearchParams();
+  const { documentText } = useQuizStore();
+  useEffect(() => {
+    if (searchParams.get('step') === 'config' && documentText) {
+      onConfigStep();
+    }
+  }, [searchParams, documentText, onConfigStep]);
+  return null;
+}
+
 export default function UploadPage() {
   const { data: sessionData, status } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -60,12 +71,6 @@ export default function UploadPage() {
   const [step, setStep] = useState<Step>('upload');
 
   // If the hero already analyzed a file and redirected here, skip straight to config
-  useEffect(() => {
-    if (searchParams.get('step') === 'config' && documentText) {
-      setStep('config');
-    }
-  }, [searchParams, documentText]);
-
   const [, setQuestions] = useState<Question[]>([]);
   const [result, setResult] = useState<QuizResult | null>(null);
 
@@ -139,6 +144,11 @@ export default function UploadPage() {
 
   return (
     <div className="min-h-screen bg-black flex flex-col text-white">
+      {/* Reads ?step=config from URL, wrapped in Suspense as required by Next.js */}
+      <Suspense fallback={null}>
+        <SearchParamsReader onConfigStep={() => setStep('config')} />
+      </Suspense>
+
       {/* Subtle ambient glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-white/[0.025] blur-3xl" />
