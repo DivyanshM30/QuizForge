@@ -290,7 +290,7 @@ export default function HeroSection() {
           <div className="flex items-center gap-4">
             {isLoggedIn ? (
               <Link
-                href="/upload"
+                href="/dashboard"
                 className="liquid-glass rounded-full px-6 py-2 flex items-center gap-2 text-white text-sm font-medium hover:bg-white/5 transition-colors cursor-pointer"
               >
                 <LayoutDashboard size={14} />

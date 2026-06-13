@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { LogOut, History, Zap } from 'lucide-react';
+import { LogOut, History, Zap, LayoutDashboard } from 'lucide-react';
 
 function QuizForgeLogo() {
   return (
@@ -40,6 +40,15 @@ export default function AppNav({ actions }: AppNavProps) {
 
           {session && (
             <>
+              {pathname !== '/dashboard' && (
+                <Link
+                  href="/dashboard"
+                  className="hidden sm:flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-medium transition-colors px-3 py-1.5 rounded-full hover:bg-white/5"
+                >
+                  <LayoutDashboard size={15} />
+                  Dashboard
+                </Link>
+              )}
               {pathname !== '/history' && (
                 <Link
                   href="/history"
