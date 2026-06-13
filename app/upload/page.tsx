@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuizStore } from '@/store/quiz-store';
 import FileUpload from '@/components/FileUpload';
 import QuizConfig from '@/components/QuizConfig';
@@ -45,6 +45,7 @@ function StepBadge({ current, step }: { current: Step; step: Step }) {
 export default function UploadPage() {
   const { data: sessionData, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -57,6 +58,14 @@ export default function UploadPage() {
   } = useQuizStore();
 
   const [step, setStep] = useState<Step>('upload');
+
+  // If the hero already analyzed a file and redirected here, skip straight to config
+  useEffect(() => {
+    if (searchParams.get('step') === 'config' && documentText) {
+      setStep('config');
+    }
+  }, [searchParams, documentText]);
+
   const [, setQuestions] = useState<Question[]>([]);
   const [result, setResult] = useState<QuizResult | null>(null);
 

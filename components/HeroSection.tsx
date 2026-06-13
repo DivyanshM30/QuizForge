@@ -1,9 +1,12 @@
 'use client';
 
 import { useRef, useEffect, useCallback, useState } from 'react';
-import { Upload, Sparkles, ArrowRight, LayoutDashboard } from 'lucide-react';
+import { Upload, Sparkles, ArrowRight, LayoutDashboard, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useQuizStore } from '@/store/quiz-store';
+import { validateFile } from '@/lib/file-validation';
 
 /* ─── Types ─────────────────────────────────────────────── */
 interface AnimFrameRef {
@@ -88,10 +91,54 @@ export default function HeroSection() {
   const animRef = useRef<AnimFrameRef>({ id: null });
   const fadingOutRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedFileRef = useRef<File | null>(null);  // stores the file before Generate is clicked
   const [fileName, setFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'analyzing' | 'error'>('idle');
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const { data: session, status } = useSession();
   const isLoggedIn = status === 'authenticated';
+  const router = useRouter();
+  const { setDocumentText } = useQuizStore();
+
+  /* ── File processing ── */
+  const processFile = useCallback(async (file: File) => {
+    // Validate
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error || 'Invalid file');
+      setUploadState('error');
+      return;
+    }
+
+    // If not logged in, store intent and redirect to login
+    if (!isLoggedIn) {
+      router.push('/login');
+      return;
+    }
+
+    setFileName(file.name);
+    setUploadError(null);
+    setUploadState('uploading');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      setUploadState('analyzing');
+      const res = await fetch('/api/analyze-document', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to analyze document');
+      }
+      const data = await res.json();
+      setDocumentText(data.text);
+      // Jump straight to the config step on the upload page
+      router.push('/upload?step=config');
+    } catch (err: any) {
+      setUploadError(err.message || 'Upload failed');
+      setUploadState('error');
+    }
+  }, [isLoggedIn, router, setDocumentText]);
 
   /* ── Video fade helpers ── */
   const startFadeIn = useCallback(() => {
@@ -142,28 +189,55 @@ export default function HeroSection() {
     };
   }, [startFadeIn, handleTimeUpdate, handleEnded]);
 
-  /* ── File upload handlers ── */
-  const handleFile = (file: File) => {
+  /* ── File selection (no API call yet) ── */
+  const selectFile = (file: File) => {
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error || 'Invalid file');
+      setUploadState('error');
+      selectedFileRef.current = null;
+      return;
+    }
+    selectedFileRef.current = file;
     setFileName(file.name);
+    setUploadState('idle');
+    setUploadError(null);
+  };
+
+  /* ── Generate: triggered only by the Generate button ── */
+  const handleGenerate = () => {
+    if (isBusy) return;
+    if (uploadState === 'error') { setUploadState('idle'); setFileName(null); selectedFileRef.current = null; return; }
+    if (selectedFileRef.current) {
+      processFile(selectedFileRef.current);
+    } else {
+      // No file selected yet — open the picker
+      fileInputRef.current?.click();
+    }
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) handleFile(file);
+    if (file) selectFile(file);
+    e.target.value = '';
   };
 
-  const onDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
+  const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
   const onDragLeave = () => setIsDragging(false);
-
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) handleFile(file);
+    if (file) selectFile(file);
+  };
+
+  const isBusy = uploadState === 'uploading' || uploadState === 'analyzing';
+
+  const pillLabel = () => {
+    if (uploadState === 'uploading') return 'Uploading…';
+    if (uploadState === 'analyzing') return 'Reading document…';
+    if (uploadState === 'error') return uploadError ?? 'Upload failed — click Generate to retry';
+    return fileName ?? 'Drop your PDF, DOCX, or click to browse…';
   };
 
   return (
@@ -258,33 +332,62 @@ export default function HeroSection() {
 
           {/* File upload bar */}
           <div
-            className={`liquid-glass rounded-full pl-5 pr-2 py-2 flex items-center gap-3 transition-all duration-200 ${
-              isDragging ? 'ring-1 ring-white/30 bg-white/5' : ''
-            }`}
+            className={`liquid-glass rounded-full pl-5 pr-2 py-2 flex items-center gap-3 transition-all duration-200 cursor-pointer ${
+              isDragging ? 'ring-1 ring-white/30 bg-white/5' : 'hover:bg-white/[0.03]'
+            } ${uploadState === 'error' ? 'ring-1 ring-red-500/40' : ''}`}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
+            onClick={() => !isBusy && fileInputRef.current?.click()}
           >
-            <Upload size={18} className="text-white/50 flex-shrink-0" />
+            {isBusy ? (
+              <Loader2 size={18} className="text-white/50 flex-shrink-0 animate-spin" />
+            ) : (
+              <Upload size={18} className={`flex-shrink-0 transition-colors ${fileName ? 'text-white/60' : 'text-white/40'}`} />
+            )}
             <span
               className={`flex-1 text-base text-left truncate min-w-0 select-none ${
-                fileName ? 'text-white' : 'text-white/40'
+                uploadState === 'error' ? 'text-red-400' :
+                (fileName || isBusy) ? 'text-white' : 'text-white/40'
               }`}
             >
-              {fileName ?? 'Drop your PDF, DOCX, or notes…'}
+              {pillLabel()}
             </span>
+
+            {/* Clear button when file selected and idle */}
+            {fileName && !isBusy && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setFileName(null); setUploadState('idle'); selectedFileRef.current = null; }}
+                className="text-white/30 hover:text-white/60 transition-colors p-1 cursor-pointer flex-shrink-0"
+                aria-label="Clear file"
+              >
+                <X size={14} />
+              </button>
+            )}
+
+            {/* Generate button — triggers API call */}
             <button
-              aria-label="Generate quiz"
-              onClick={() => fileInputRef.current?.click()}
-              className="bg-white rounded-full px-5 py-2.5 text-black text-sm font-semibold hover:bg-white/90 transition-colors cursor-pointer flex-shrink-0 flex items-center gap-1.5"
+              aria-label="Generate quiz from file"
+              disabled={isBusy}
+              onClick={(e) => { e.stopPropagation(); handleGenerate(); }}
+              className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all flex-shrink-0 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+                selectedFileRef.current && !isBusy && uploadState !== 'error'
+                  ? 'bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.15)]'
+                  : 'bg-white/10 text-white/70 hover:bg-white/15'
+              }`}
             >
-              <Sparkles size={15} />
-              Generate
+              {isBusy ? (
+                <><Loader2 size={15} className="animate-spin" /> Working…</>
+              ) : selectedFileRef.current ? (
+                <><Sparkles size={15} /> Generate</>
+              ) : (
+                <>Browse</>
+              )}
             </button>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.doc,.docx,.txt"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
               className="hidden"
               aria-label="Upload study material"
               onChange={onFileChange}
