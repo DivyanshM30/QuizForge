@@ -2,7 +2,7 @@
 
 > Upload any study material and QuizForge instantly crafts AI-powered MCQs, tracks your performance, and turns revision into results.
 
-**Live demo** → [quizforge.vercel.app](https://quizforge.vercel.app) &nbsp;|&nbsp; Built by [Divyansh Mishra](https://divyanshm.dev)
+**Live demo** → [thequizforge.vercel.app](https://thequizforge.vercel.app) &nbsp;|&nbsp; Built by [Divyansh Mishra](https://divyanshm.dev)
 
 ---
 
@@ -62,10 +62,10 @@ GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 
 NEXTAUTH_SECRET=your_super_secret_key_here
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=https://thequizforge.vercel.app
 ```
 
-> **Tip**: For Vercel deployments, set `NEXTAUTH_URL` to your production URL (e.g. `https://quizforge.vercel.app`).
+> **Tip**: For local development, set `NEXTAUTH_URL=http://localhost:3000`. For production it should be `https://thequizforge.vercel.app`.
 
 ### 3. Push Database Schema
 
