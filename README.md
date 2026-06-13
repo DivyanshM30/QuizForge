@@ -1,188 +1,193 @@
-# QuizForge by Divyansh Mishra
+# QuizForge — AI-Powered MCQ Generator
 
-A comprehensive Next.js application that analyzes study documents, generates AI-powered MCQs using Gemini API, conducts timed quizzes, and provides detailed performance analytics.
+> Upload any study material and QuizForge instantly crafts AI-powered MCQs, tracks your performance, and turns revision into results.
 
-## Features
+**Live demo** → [quizforge.vercel.app](https://quizforge.vercel.app) &nbsp;|&nbsp; Built by [Divyansh Mishra](https://divyanshm.dev)
 
-- 📄 **Document Analysis**: Upload PDF, DOCX, or PPT files and extract text content
-- 🤖 **AI Question Generation**: Uses Google Gemini 2.5 Flash to generate high-quality MCQs
-- ⏱️ **Timed Quizzes**: Customizable time limits with countdown timer
-- 📊 **Performance Analytics**: Detailed topic-wise performance analysis with visual charts
-- 🔒 **Secure Authentication**: Secure user registration and login powered by NextAuth.js and bcryptjs
-- 📈 **Persistent History**: Track your progress with PostgreSQL database storage using Prisma ORM
-- 🎨 **Modern UI**: Beautiful glassmorphism design with responsive layout
-- ⚡ **Real-time Feedback**: Immediate feedback after each question with explanations
+---
 
-## Prerequisites
+## ✨ Features
 
-- Node.js 18+ and npm/yarn
-- Google Gemini API Key ([Get one here](https://makersuite.google.com/app/apikey))
-- PostgreSQL Database (e.g., Neon or Supabase)
+| | Feature | Description |
+|---|---|---|
+| 📄 | **Universal Upload** | PDF, DOCX, PPT, PPTX — drag-and-drop or browse from the hero |
+| 🤖 | **Gemini AI Questions** | Google Gemini 2.5 Flash generates exam-quality MCQs with explanations |
+| ⚙️ | **Configurable Quiz** | Choose difficulty (easy / medium / hard / mixed), question count (5–50), and time limit (5–120 min) |
+| ⏱️ | **Timed Sessions** | Live countdown with warning states; time-up auto-submits the quiz |
+| 📊 | **Instant Analytics** | Topic-wise bar chart, accuracy score, weak areas, and revision suggestions |
+| 📚 | **Full History** | Every attempt saved to PostgreSQL — revisit and delete any past result |
+| 🔒 | **Auth** | Email/password auth via NextAuth.js + bcryptjs |
+| 🎬 | **Cinematic UI** | Full-screen looping video hero, liquid-glass design system, dark cinematic aesthetic |
+| ⚡ | **Hero Mini-Upload** | Drop a file right on the landing page — jumps straight to quiz config |
 
-## Setup Instructions
+---
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/DivyanshM30/QuizForge
-   cd quizforge
-   ```
+## 🖥️ Tech Stack
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+- **Next.js 14** (App Router) · **TypeScript** · **Tailwind CSS**
+- **Google Gemini API** (gemini-2.5-flash) — AI question generation
+- **NextAuth.js** — session management
+- **Prisma ORM** + **PostgreSQL** (Neon / Supabase) — persistent storage
+- **Zustand** — client-side state
+- **Recharts** — performance charts
+- **React Dropzone** — file upload UX
+- **bcryptjs** — password hashing
 
-3. **Configure environment variables**
-   
-   Create a `.env` file in the root directory:
-   ```env
-   DATABASE_URL="postgresql://username:password@host/database"
-   GEMINI_API_KEY=your_gemini_api_key_here
-   GEMINI_MODEL=gemini-2.5-flash
-   NEXTAUTH_SECRET=your_super_secret_key_here
-   ```
+---
 
-4. **Initialize Database**
-   ```bash
-   npx prisma db push
-   ```
+## 🚀 Getting Started
 
-5. **Run the development server**
-   ```bash
-   npm run dev
-   ```
+### Prerequisites
 
-6. **Open your browser**
-   
-   Navigate to [http://localhost:3000](http://localhost:3000)
+- Node.js 18+
+- Google Gemini API Key ([get one](https://makersuite.google.com/app/apikey))
+- PostgreSQL database (e.g., [Neon](https://neon.tech) or [Supabase](https://supabase.com) — free tiers work)
 
-## Usage
+### 1. Clone & Install
 
-1. **Create an Account**: Register or log in to track your quizzes
-2. **Upload Document**: Drag and drop or click to upload your study document (PDF, DOCX, or PPT)
-3. **Configure Quiz**: Set the number of questions (5-50), time limit (5-120 minutes), and difficulty level
-4. **Take Quiz**: Answer questions and receive immediate feedback with explanations
-5. **View Results**: See your score, accuracy, topic-wise performance, and revision suggestions
-6. **Review History**: Access past quiz results securely saved in the database from the history page
+```bash
+git clone https://github.com/DivyanshM30/QuizForge
+cd QuizForge
+npm install
+```
 
-## Project Structure
+### 2. Environment Variables
+
+Create a `.env` file at the project root:
+
+```env
+DATABASE_URL="postgresql://username:password@host/database"
+
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+
+NEXTAUTH_SECRET=your_super_secret_key_here
+NEXTAUTH_URL=http://localhost:3000
+```
+
+> **Tip**: For Vercel deployments, set `NEXTAUTH_URL` to your production URL (e.g. `https://quizforge.vercel.app`).
+
+### 3. Push Database Schema
+
+```bash
+npx prisma db push
+```
+
+### 4. Run Dev Server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+---
+
+## 📖 Usage Flow
+
+```
+Landing page  →  Drop PDF in hero pill  →  Configure quiz  →  Take quiz  →  Results & analytics
+                        ↕
+               Or: Sign up → /upload for full flow
+```
+
+1. **Drop a file** on the hero pill (or click **Browse**) → file selected, name shown
+2. Click **Generate ✨** → file is uploaded & analyzed, you're redirected to config
+3. **Configure**: difficulty · question count · time limit → Start Quiz
+4. **Quiz**: lettered options, instant feedback modal, live timer
+5. **Results**: score, accuracy %, topic bar chart, weak areas, revision suggestions
+6. **History**: all past attempts at `/history`, with per-quiz detail pages
+
+---
+
+## 🗂️ Project Structure
 
 ```
 quizforge/
 ├── app/
 │   ├── api/
-│   │   ├── analyze-document/    # Document parsing endpoint
-│   │   ├── auth/[...nextauth]/  # NextAuth API routes
-│   │   ├── generate-questions/  # AI question generation endpoint
-│   │   ├── history/             # User history API endpoints
-│   │   ├── register/            # User registration API endpoint
-│   │   └── save-quiz/           # Quiz result saving endpoint
-│   ├── history/                 # Quiz history pages
-│   ├── login/                   # Login page
-│   ├── register/                # Registration page
-│   ├── upload/                  # Quiz configuration & upload page
-│   ├── globals.css              # Global styles
-│   ├── layout.tsx               # Root layout with SessionProvider
-│   └── page.tsx                 # Main landing page
+│   │   ├── analyze-document/     # Parses uploaded file → plain text
+│   │   ├── auth/[...nextauth]/   # NextAuth API routes
+│   │   ├── generate-questions/   # Gemini AI → MCQ generation
+│   │   ├── history/              # GET list of past quizzes
+│   │   ├── history/[id]/         # GET / DELETE single quiz result
+│   │   ├── register/             # User registration
+│   │   └── save-quiz/            # Persist quiz result to DB
+│   ├── history/
+│   │   ├── page.tsx              # History list page
+│   │   └── [id]/page.tsx         # Quiz detail page
+│   ├── login/page.tsx
+│   ├── register/page.tsx
+│   ├── upload/page.tsx           # Multi-step: upload → config → quiz → results
+│   ├── globals.css               # Design system (liquid-glass, dark-card, etc.)
+│   ├── layout.tsx
+│   └── page.tsx                  # Landing page (HeroSection + LandingSections)
 ├── components/
-│   ├── FileUpload.tsx           # Document upload component
-│   ├── QuizConfig.tsx           # Quiz configuration component
-│   ├── QuizInterface.tsx        # Main quiz interface
-│   ├── Timer.tsx                # Countdown timer
-│   ├── FeedbackModal.tsx        # Answer feedback modal
-│   ├── ResultsDashboard.tsx     # Results display
-│   ├── QuizHistory.tsx          # History viewer
-│   └── LoadingSpinner.tsx       # Loading states
+│   ├── HeroSection.tsx           # Full-screen video hero with mini-upload
+│   ├── LandingSections.tsx       # Features / How It Works / About / Footer
+│   ├── AppNav.tsx                # Shared dark-glass nav bar
+│   ├── FileUpload.tsx            # Full upload dropzone (used inside /upload)
+│   ├── QuizConfig.tsx            # Difficulty / question count / time config
+│   ├── QuizInterface.tsx         # Question card with options & progress
+│   ├── FeedbackModal.tsx         # Post-answer explanation modal
+│   ├── ResultsDashboard.tsx      # Score, chart, suggestions
+│   ├── QuizHistory.tsx           # History row list
+│   ├── Timer.tsx                 # Live countdown pill
+│   └── LoadingSpinner.tsx
 ├── lib/
-│   ├── auth.ts                  # NextAuth configuration options
-│   ├── types.ts                 # TypeScript type definitions
-│   ├── gemini.ts                # Gemini API client
-│   ├── document-parser.ts       # Document parsing utilities
-│   ├── prisma.ts                # Prisma Client instance
-│   └── quiz-utils.ts            # Quiz utility functions
-├── prisma/
-│   └── schema.prisma            # Prisma database schema definitions
+│   ├── auth.ts                   # NextAuth config
+│   ├── types.ts                  # Shared TypeScript types
+│   ├── gemini.ts                 # Gemini API wrapper
+│   ├── document-parser.ts        # PDF / DOCX / PPT text extraction
+│   ├── file-validation.ts        # File type + size validation
+│   ├── prisma.ts                 # Prisma client singleton
+│   └── quiz-utils.ts             # Score calculation, formatTime, etc.
 ├── store/
-│   └── quiz-store.ts            # Zustand state management
-└── package.json
+│   └── quiz-store.ts             # Zustand store — quiz session state
+└── prisma/
+    └── schema.prisma
 ```
 
-## Environment Variables
+---
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `GEMINI_API_KEY` | Your Google Gemini API key | Yes |
-| `GEMINI_MODEL` | Gemini model to use (default: `gemini-2.5-flash`) | No |
-| `NEXTAUTH_SECRET`| Secret key used to encrypt session tokens | Yes |
+## 🌍 Deployment (Vercel)
 
-## Deployment
+1. Push to GitHub
+2. Import the repo at [vercel.com/new](https://vercel.com/new)
+3. Add environment variables:
 
-### Vercel (Recommended)
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `GEMINI_API_KEY` | ✅ | From Google AI Studio |
+| `GEMINI_MODEL` | ❌ | Defaults to `gemini-2.5-flash` |
+| `NEXTAUTH_SECRET` | ✅ | Any long random string |
+| `NEXTAUTH_URL` | ✅ | Your Vercel deployment URL |
 
-1. Push your code to GitHub
-2. Import your repository in [Vercel](https://vercel.com)
-3. Add your `DATABASE_URL`, `GEMINI_API_KEY`, `NEXTAUTH_SECRET`, and `NEXTAUTH_URL` in the environment variables section
-4. Deploy!
+4. Deploy. Vercel auto-runs `prisma generate` via the `postinstall` script.
 
-### Other Platforms
+---
 
-The app can be deployed to any platform that supports Next.js:
-- Netlify
-- AWS Amplify
-- Railway
-- Render
+## 🛠️ Troubleshooting
 
-Make sure to set the `GEMINI_API_KEY` and `NEXTAUTH_SECRET` environment variables.
+| Problem | Fix |
+|---|---|
+| **Database tables missing** | Run `npx prisma db push` |
+| **Gemini quota errors** | Check API key quota at [ai.google.dev](https://ai.google.dev); reduce question count |
+| **Video not playing** | Browser autoplay policies — the video is muted and `playsInline`, should work everywhere |
+| **File parse fails** | Ensure file is ≤ 10 MB and in a supported format (PDF, DOCX, PPT, PPTX) |
+| **Auth not working** | Confirm `NEXTAUTH_SECRET` and `NEXTAUTH_URL` are set correctly |
 
-## File Size Limits
+---
 
-- Maximum file size: **10MB**
-- Supported formats: PDF, DOCX, PPT, PPTX
-- Larger files may require additional processing time
+## 📜 License
 
-## Database
+MIT — free to use, modify, and distribute.
 
-Quiz history and user accounts are stored in a **PostgreSQL** database (e.g., Neon or Supabase) managed by **Prisma ORM**, ensuring fast, reliable, and persistent storage optimized for serverless hosting on Vercel.
+---
 
-## Technologies Used
-
-- **Next.js 15**: React framework
-- **TypeScript**: Type safety
-- **Tailwind CSS**: Styling
-- **NextAuth.js**: Authentication
-- **Prisma**: Database ORM
-- **PostgreSQL**: Production and development database
-- **Zustand**: State management
-- **Recharts**: Data visualization
-- **React Dropzone**: File uploads
-- **Google Gemini API**: AI question generation
-- **bcryptjs**: Serverless-compatible password hashing
-
-## Troubleshooting
-
-### API Key Issues
-- Ensure your `GEMINI_API_KEY` is correctly set in `.env.local`
-- Verify the API key is valid and has sufficient quota
-
-### Authentication Issues
-- Ensure `NEXTAUTH_SECRET` is defined in your environment variables
-- Run `npx prisma db push` if you encounter database query errors related to missing tables
-
-### Document Parsing Errors
-- Ensure files are in supported formats (PDF, DOCX, PPT)
-- Check file size is under 10MB
-- Try converting PPT files to PDF for better compatibility
-
-### Question Generation Fails
-- Check your Gemini API quota
-- Verify the document text was extracted correctly
-- Try reducing the number of questions
-
-## License
-
-MIT
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+<p align="center">
+  Made with ☕ by <a href="https://divyanshm.dev">Divyansh Mishra</a> &nbsp;·&nbsp;
+  <a href="https://linkedin.com/in/divyanshm30">LinkedIn</a> &nbsp;·&nbsp;
+  <a href="https://github.com/DivyanshM30">GitHub</a>
+</p>
