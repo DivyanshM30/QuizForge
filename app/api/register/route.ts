@@ -1,14 +1,33 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { checkRateLimit } from "@/lib/rate-limit"
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 registrations per 15 minutes per IP
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rl = checkRateLimit(`register:${ip}`, 5, 15 * 60 * 1000);
+    if (!rl.success) {
+      return NextResponse.json(
+        { message: "Too many registration attempts — please try again later" },
+        { status: 429 }
+      )
+    }
+
     const { name, email, password } = await req.json()
 
     if (!email || !password) {
       return NextResponse.json(
         { message: "Missing email or password" },
+        { status: 400 }
+      )
+    }
+
+    // Password complexity: at least 8 characters
+    if (password.length < 8) {
+      return NextResponse.json(
+        { message: "Password must be at least 8 characters long" },
         { status: 400 }
       )
     }

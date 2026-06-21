@@ -1,12 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseDocument } from '@/lib/document-parser';
 import { validateFile } from '@/lib/file-validation';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized — please sign in' },
+        { status: 401 }
+      );
+    }
+
+    // Rate limit: 20 uploads per 10 minutes per user
+    // @ts-ignore — session.id is set in the JWT callback
+    const userId = (session.id as string) || session.user.email || 'anon';
+    const rl = checkRateLimit(`analyze:${userId}`, 20, 10 * 60 * 1000);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Too many requests — please try again later' },
+        { status: 429 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 

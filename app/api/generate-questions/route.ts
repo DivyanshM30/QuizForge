@@ -1,12 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateQuestions } from '@/lib/gemini';
 import { QuizConfig, Question } from '@/lib/types';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized — please sign in' },
+        { status: 401 }
+      );
+    }
+
+    // Rate limit: 10 generations per 10 minutes per user (these are expensive)
+    // @ts-ignore — session.id is set in the JWT callback
+    const userId = (session.id as string) || session.user.email || 'anon';
+    const rl = checkRateLimit(`generate:${userId}`, 10, 10 * 60 * 1000);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Too many requests — please try again later' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { documentText, config } = body;
 
