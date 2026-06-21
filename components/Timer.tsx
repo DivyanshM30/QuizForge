@@ -22,7 +22,11 @@ export default function Timer({ onTimeUp }: TimerProps) {
       setRemaining(time);
       if (time <= 0) {
         clearInterval(interval);
-        onTimeUp ? onTimeUp() : endQuiz();
+        if (onTimeUp) {
+          onTimeUp();
+        } else {
+          endQuiz();
+        }
       }
     }, 1000);
     return () => clearInterval(interval);
