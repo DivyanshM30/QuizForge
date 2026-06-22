@@ -53,6 +53,37 @@ function SearchParamsReader({ onConfigStep }: { onConfigStep: () => void }) {
   return null;
 }
 
+/* ── Escalating status while questions generate (so the user never just stares) ── */
+function GeneratingStatus() {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const message =
+    elapsed < 7
+      ? 'Generating questions with AI… this may take a moment.'
+      : elapsed < 14
+      ? 'Still working — analyzing your material and crafting questions…'
+      : 'The AI service is busy right now — retrying for you. Hang tight…';
+  return <LoadingSpinner message={message} />;
+}
+
+/* ── Turn raw API/model errors into something a user can act on ── */
+function friendlyError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes('503') || m.includes('high demand') || m.includes('overloaded') || m.includes('unavailable')) {
+    return 'The AI service is busy right now. Please try again in a moment.';
+  }
+  if (m.includes('429') || m.includes('too many') || m.includes('rate limit')) {
+    return "You're sending requests too quickly. Please wait a minute and try again.";
+  }
+  if (m.includes('401') || m.includes('unauthorized')) {
+    return 'Your session expired. Please sign in again.';
+  }
+  return message || 'Failed to generate questions. Please try again.';
+}
+
 export default function UploadPage() {
   const { status } = useSession();
   const router = useRouter();
@@ -88,23 +119,35 @@ export default function UploadPage() {
     if (!documentText) { setError('No document text available'); return; }
     setGenerating(true);
     setError(null);
+    // Safety net: server maxDuration is 120s, so abort just past that rather
+    // than spin forever if the connection stalls.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 125_000);
     try {
       const response = await fetch('/api/generate-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ documentText, config }),
+        signal: controller.signal,
       });
       if (!response.ok) {
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         throw new Error(data.error || 'Failed to generate questions');
       }
       const data = await response.json();
       setQuestions(data.questions);
       startQuiz(data.questions, config);
       setStep('quiz');
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate questions');
+    } catch (err) {
+      const name = (err as { name?: string })?.name;
+      const message = (err as { message?: string })?.message ?? '';
+      setError(
+        name === 'AbortError'
+          ? 'Generation is taking too long — the AI service may be busy. Please try again in a moment.'
+          : friendlyError(message)
+      );
     } finally {
+      clearTimeout(timeout);
       setGenerating(false);
     }
   };
@@ -162,8 +205,8 @@ export default function UploadPage() {
         ))}
       </div>
 
-      {/* Error */}
-      {error && (
+      {/* Error (config step shows its own inline error below, co-located with the spinner) */}
+      {error && step !== 'config' && (
         <div className="relative z-10 mx-auto max-w-3xl w-full px-4 mt-4">
           <div className="liquid-glass rounded-2xl px-4 py-3 flex items-center gap-2.5 text-red-400 text-sm">
             <AlertCircle size={16} className="flex-shrink-0" />
@@ -210,11 +253,18 @@ export default function UploadPage() {
               </p>
             </div>
             <QuizConfig onStart={handleStartQuiz} isGenerating={isGenerating} />
-            {isGenerating && (
+            {isGenerating ? (
               <div className="mt-8">
-                <LoadingSpinner message="Generating questions with AI… this may take a moment." />
+                <GeneratingStatus />
               </div>
-            )}
+            ) : error ? (
+              <div className="mt-8 mx-auto max-w-3xl">
+                <div className="liquid-glass rounded-2xl px-4 py-3 flex items-center gap-2.5 text-red-400 text-sm">
+                  <AlertCircle size={16} className="flex-shrink-0" />
+                  {error}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
 
