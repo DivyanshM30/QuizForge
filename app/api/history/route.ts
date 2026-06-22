@@ -16,8 +16,7 @@ export async function GET(req: Request) {
       )
     }
 
-    // @ts-ignore
-    const userId = session.id as string
+    const userId = session.user.id
 
     const results = await prisma.quizResult.findMany({
       where: { userId },

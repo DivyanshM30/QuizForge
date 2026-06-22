@@ -21,8 +21,7 @@ export async function GET(
 
     const { id } = params
     
-    // @ts-ignore
-    const userId = session.id as string
+    const userId = session.user.id
 
     const result = await prisma.quizResult.findUnique({
       where: { id }
@@ -72,8 +71,7 @@ export async function DELETE(
 
     const { id } = params
     
-    // @ts-ignore
-    const userId = session.id as string
+    const userId = session.user.id
 
     // Verify ownership
     const quiz = await prisma.quizResult.findUnique({

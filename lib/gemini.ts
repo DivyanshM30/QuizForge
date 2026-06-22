@@ -59,6 +59,62 @@ async function generateWithFallbackModels(prompt: string): Promise<string> {
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
+const OPTION_KEYS = ['a', 'b', 'c', 'd'] as const;
+const DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
+
+function isNonEmptyString(v: unknown): v is string {
+  return typeof v === 'string' && v.trim().length > 0;
+}
+
+/**
+ * Validate and repair a raw, untrusted model response into well-formed
+ * Questions. Entries missing the fields the quiz UI depends on (question text,
+ * four options, a valid correct answer) are dropped; soft fields (id,
+ * explanation, topic, difficulty) are repaired with sensible defaults. This
+ * keeps a malformed model response from crashing the request or the UI.
+ */
+function sanitizeQuestions(raw: unknown): Question[] {
+  if (!Array.isArray(raw)) {
+    throw new Error('Model did not return a JSON array of questions');
+  }
+
+  const cleaned: Question[] = [];
+  raw.forEach((item, index) => {
+    if (typeof item !== 'object' || item === null) return;
+    const q = item as Record<string, unknown>;
+
+    if (!isNonEmptyString(q.question)) return;
+
+    const options = q.options as Record<string, unknown> | undefined;
+    if (!options || OPTION_KEYS.some((k) => !isNonEmptyString(options[k]))) return;
+
+    const correct = isNonEmptyString(q.correctAnswer) ? q.correctAnswer.trim().toLowerCase() : '';
+    if (!OPTION_KEYS.includes(correct as (typeof OPTION_KEYS)[number])) return;
+
+    const rawDifficulty = isNonEmptyString(q.difficulty) ? q.difficulty.toLowerCase() : '';
+    const difficulty = (DIFFICULTIES as readonly string[]).includes(rawDifficulty)
+      ? (rawDifficulty as Question['difficulty'])
+      : 'medium';
+
+    cleaned.push({
+      id: isNonEmptyString(q.id) ? q.id : `q${index + 1}`,
+      question: q.question.trim(),
+      options: {
+        a: (options.a as string).trim(),
+        b: (options.b as string).trim(),
+        c: (options.c as string).trim(),
+        d: (options.d as string).trim(),
+      },
+      correctAnswer: correct as Question['correctAnswer'],
+      explanation: isNonEmptyString(q.explanation) ? q.explanation.trim() : 'No explanation provided.',
+      topic: isNonEmptyString(q.topic) ? q.topic.trim() : 'General',
+      difficulty,
+    });
+  });
+
+  return cleaned;
+}
+
 export async function generateQuestions(
   documentText: string,
   config: QuizConfig
@@ -114,18 +170,12 @@ IMPORTANT:
       cleanedText = cleanedText.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
 
-    const questions: Question[] = JSON.parse(cleanedText);
+    // Validate/repair the untrusted model output before trusting it
+    const validatedQuestions = sanitizeQuestions(JSON.parse(cleanedText));
 
-    // Validate and add IDs if missing
-    const validatedQuestions = questions.map((q, index) => ({
-      ...q,
-      id: q.id || `q${index + 1}`,
-      correctAnswer: q.correctAnswer.toLowerCase() as 'a' | 'b' | 'c' | 'd',
-    }));
-
-    // Ensure we have exactly the requested number
+    // Ensure we have at least the requested number of usable questions
     if (validatedQuestions.length < config.numQuestions) {
-      throw new Error(`Generated only ${validatedQuestions.length} questions, expected ${config.numQuestions}`);
+      throw new Error(`Generated only ${validatedQuestions.length} valid questions, expected ${config.numQuestions}`);
     }
 
     return validatedQuestions.slice(0, config.numQuestions);
@@ -155,6 +205,10 @@ Format: [{"id":"q1","question":"...","options":{"a":"...","b":"...","c":"...","d
     .trim()
     .replace(/```json\n?/g, '')
     .replace(/```\n?/g, '');
-  
-  return JSON.parse(text);
+
+  const questions = sanitizeQuestions(JSON.parse(text));
+  if (questions.length === 0) {
+    throw new Error('The AI returned no usable questions. Please try again.');
+  }
+  return questions.slice(0, config.numQuestions);
 }

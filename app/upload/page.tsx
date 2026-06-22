@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuizStore } from '@/store/quiz-store';
@@ -103,6 +103,8 @@ export default function UploadPage() {
   // If the hero already analyzed a file and redirected here, skip straight to config
   const [, setQuestions] = useState<Question[]>([]);
   const [result, setResult] = useState<QuizResult | null>(null);
+  // Guards the quiz from being saved twice (e.g. time-up + manual finish racing).
+  const hasSavedRef = useRef(false);
 
   const handleFileAnalyzed = (text: string) => {
     setDocumentText(text);
@@ -136,6 +138,7 @@ export default function UploadPage() {
       }
       const data = await response.json();
       setQuestions(data.questions);
+      hasSavedRef.current = false; // fresh quiz — allow exactly one save
       startQuiz(data.questions, config);
       setStep('quiz');
     } catch (err) {
@@ -153,7 +156,10 @@ export default function UploadPage() {
   };
 
   const handleQuizComplete = async () => {
-    if (!session) return;
+    // Run exactly once per quiz — both the time-up path and the manual
+    // "finish" path funnel here, and we must not POST a duplicate result.
+    if (hasSavedRef.current || !session) return;
+    hasSavedRef.current = true;
     const timeTaken = Math.floor((Date.now() - session.startTime) / 1000);
     const quizResult = createQuizResult(
       session.questions, session.userAnswers, timeTaken, session.timeLimit, session.config

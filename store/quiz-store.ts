@@ -20,7 +20,6 @@ interface QuizStore {
   resetQuiz: () => void;
   getCurrentQuestion: () => Question | null;
   getRemainingTime: () => number;
-  updateTimer: () => void;
 }
 
 export const useQuizStore = create<QuizStore>((set, get) => ({
@@ -107,17 +106,5 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     const elapsed = (Date.now() - session.startTime) / 1000;
     const remaining = session.timeLimit - elapsed;
     return Math.max(0, Math.floor(remaining));
-  },
-
-  updateTimer: () => {
-    // This is called periodically to update the timer
-    // The actual time calculation is done in getRemainingTime
-    const { session } = get();
-    if (session) {
-      const remaining = get().getRemainingTime();
-      if (remaining <= 0) {
-        get().endQuiz();
-      }
-    }
   },
 }));

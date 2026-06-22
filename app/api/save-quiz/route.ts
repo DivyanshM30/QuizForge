@@ -30,8 +30,7 @@ export async function POST(req: Request) {
       userAnswers 
     } = await req.json()
 
-    // @ts-ignore
-    const userId = session.id as string
+    const userId = session.user.id
 
     const result = await prisma.quizResult.create({
       data: {

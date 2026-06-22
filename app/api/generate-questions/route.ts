@@ -20,8 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit: 10 generations per 10 minutes per user (these are expensive)
-    // @ts-ignore — session.id is set in the JWT callback
-    const userId = (session.id as string) || session.user.email || 'anon';
+    const userId = session.user.id || session.user.email || 'anon';
     const rl = checkRateLimit(`generate:${userId}`, 10, 10 * 60 * 1000);
     if (!rl.success) {
       return NextResponse.json(

@@ -10,7 +10,7 @@ interface QuizInterfaceProps {
 }
 
 export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
-  const { session, getCurrentQuestion, submitAnswer, nextQuestion, getRemainingTime, updateTimer, endQuiz } = useQuizStore();
+  const { session, getCurrentQuestion, submitAnswer, nextQuestion } = useQuizStore();
 
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -27,18 +27,6 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
       setHasAnswered(userAnswer !== null);
     }
   }, [session, currentIndex, userAnswer]);
-
-  useEffect(() => {
-    if (!session) return;
-    const interval = setInterval(() => {
-      updateTimer();
-      if (getRemainingTime() <= 0) {
-        clearInterval(interval);
-        handleTimeUp();
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [session, updateTimer, getRemainingTime]);
 
   if (!session || !currentQuestion) return null;
 
@@ -59,7 +47,9 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
     else onComplete();
   };
 
-  const handleTimeUp = () => { endQuiz(); onComplete(); };
+  // Single completion path: let the parent's handleQuizComplete own saving and
+  // ending the quiz (it reads the session, so we must not null it here first).
+  const handleTimeUp = () => { onComplete(); };
 
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 

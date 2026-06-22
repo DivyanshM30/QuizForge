@@ -10,14 +10,13 @@ interface TimerProps {
 }
 
 export default function Timer({ onTimeUp }: TimerProps) {
-  const { session, getRemainingTime, updateTimer, endQuiz } = useQuizStore();
+  const { session, getRemainingTime, endQuiz } = useQuizStore();
   const [remaining, setRemaining] = useState(0);
 
   useEffect(() => {
     if (!session) return;
     setRemaining(getRemainingTime());
     const interval = setInterval(() => {
-      updateTimer();
       const time = getRemainingTime();
       setRemaining(time);
       if (time <= 0) {
@@ -30,7 +29,7 @@ export default function Timer({ onTimeUp }: TimerProps) {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [session, getRemainingTime, updateTimer, endQuiz, onTimeUp]);
+  }, [session, getRemainingTime, endQuiz, onTimeUp]);
 
   if (!session) return null;
 

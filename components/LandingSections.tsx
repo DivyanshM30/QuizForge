@@ -24,8 +24,8 @@ function GitHubIcon() {
 const features = [
   {
     icon: <Upload size={22} />,
-    title: 'Universal Upload',
-    body: 'PDF, DOCX, PPTX or plain text — drop any study material and we extract the content instantly.',
+    title: 'Document Upload',
+    body: 'PDF or DOCX — drop your study material and we extract the content instantly.',
   },
   {
     icon: <Cpu size={22} />,
@@ -58,7 +58,7 @@ const steps = [
   {
     num: '01',
     title: 'Upload your material',
-    body: 'Drag and drop a PDF, slide deck, or any text document. Our parser extracts the raw content.',
+    body: 'Drag and drop a PDF or DOCX document. Our parser extracts the raw content.',
   },
   {
     num: '02',
