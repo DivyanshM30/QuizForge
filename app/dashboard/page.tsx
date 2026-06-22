@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, AreaChart, Area, LineChart, Line,
+  ResponsiveContainer, Cell, AreaChart, Area,
 } from 'recharts';
 import {
   TrendingUp, Trophy, Target, Clock, Zap, ChevronRight,
@@ -65,7 +65,6 @@ export default function DashboardPage() {
 
   const [history, setHistory] = useState<QuizResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Upload state
   const [fileName, setFileName] = useState<string | null>(null);
@@ -84,8 +83,8 @@ export default function DashboardPage() {
       if (!res.ok) throw new Error('Failed to fetch history');
       const data = await res.json();
       setHistory(data);
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
+    } catch (err) {
+      console.error('Failed to fetch history:', err);
     } finally {
       setIsLoading(false);
     }
@@ -484,7 +483,7 @@ export default function DashboardPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
+              accept=".pdf,.docx"
               className="hidden"
               aria-label="Upload study material"
               onChange={onFileChange}

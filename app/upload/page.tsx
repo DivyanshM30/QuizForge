@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuizStore } from '@/store/quiz-store';
 import FileUpload from '@/components/FileUpload';
@@ -11,8 +11,7 @@ import ResultsDashboard from '@/components/ResultsDashboard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { QuizConfig as QuizConfigType, Question, QuizResult } from '@/lib/types';
 import { createQuizResult } from '@/lib/quiz-utils';
-import Link from 'next/link';
-import { History, LogOut, Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle } from 'lucide-react';
 import AppNav from '@/components/AppNav';
 
 type Step = 'upload' | 'config' | 'quiz' | 'results';
@@ -55,7 +54,7 @@ function SearchParamsReader({ onConfigStep }: { onConfigStep: () => void }) {
 }
 
 export default function UploadPage() {
-  const { data: sessionData, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
@@ -186,7 +185,7 @@ export default function UploadPage() {
                 Upload your material
               </h1>
               <p className="text-white/50 text-sm">
-                PDF, DOCX, or plain text — we'll extract the content and forge your quiz
+                PDF or DOCX — we&apos;ll extract the content and forge your quiz
               </p>
             </div>
             <FileUpload

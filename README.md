@@ -10,7 +10,7 @@
 
 | | Feature | Description |
 |---|---|---|
-| 📄 | **Universal Upload** | PDF, DOCX, PPT, PPTX — drag-and-drop or browse from the hero |
+| 📄 | **Document Upload** | PDF and DOCX — drag-and-drop or browse from the hero |
 | 🤖 | **Gemini AI Questions** | Google Gemini 2.5 Flash generates exam-quality MCQs with explanations |
 | ⚙️ | **Configurable Quiz** | Choose difficulty (easy / medium / hard / mixed), question count (5–50), and time limit (5–120 min) |
 | ⏱️ | **Timed Sessions** | Live countdown with warning states; time-up auto-submits the quiz |
@@ -138,7 +138,7 @@ quizforge/
 │   ├── auth.ts                   # NextAuth config
 │   ├── types.ts                  # Shared TypeScript types
 │   ├── gemini.ts                 # Gemini API wrapper
-│   ├── document-parser.ts        # PDF / DOCX / PPT text extraction
+│   ├── document-parser.ts        # PDF / DOCX text extraction
 │   ├── file-validation.ts        # File type + size validation
 │   ├── prisma.ts                 # Prisma client singleton
 │   └── quiz-utils.ts             # Score calculation, formatTime, etc.
@@ -175,7 +175,7 @@ quizforge/
 | **Database tables missing** | Run `npx prisma db push` |
 | **Gemini quota errors** | Check API key quota at [ai.google.dev](https://ai.google.dev); reduce question count |
 | **Video not playing** | Browser autoplay policies — the video is muted and `playsInline`, should work everywhere |
-| **File parse fails** | Ensure file is ≤ 10 MB and in a supported format (PDF, DOCX, PPT, PPTX) |
+| **File parse fails** | Ensure file is ≤ 10 MB and in a supported format (PDF, DOCX) |
 | **Auth not working** | Confirm `NEXTAUTH_SECRET` and `NEXTAUTH_URL` are set correctly |
 
 ---

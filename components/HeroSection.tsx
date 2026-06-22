@@ -96,7 +96,7 @@ export default function HeroSection() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'analyzing' | 'error'>('idle');
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const isLoggedIn = status === 'authenticated';
   const router = useRouter();
   const { setDocumentText } = useQuizStore();
@@ -387,7 +387,7 @@ export default function HeroSection() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
+              accept=".pdf,.docx"
               className="hidden"
               aria-label="Upload study material"
               onChange={onFileChange}
@@ -396,7 +396,7 @@ export default function HeroSection() {
 
           {/* Subtitle */}
           <p className="text-white/70 text-sm leading-relaxed px-4">
-            Upload any study material — PDFs, lecture slides, DOCX, or plain text — and QuizForge
+            Upload your study material — PDF or DOCX — and QuizForge
             instantly crafts AI-powered MCQs, tracks your performance, and turns revision into
             results.
           </p>

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useQuizStore } from '@/store/quiz-store';
 import Timer from './Timer';
 import FeedbackModal from './FeedbackModal';
-import { Question } from '@/lib/types';
 
 interface QuizInterfaceProps {
   onComplete: () => void;

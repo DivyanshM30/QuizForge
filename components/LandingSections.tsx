@@ -178,7 +178,7 @@ export default function LandingSections() {
 
         <p className="text-white/50 text-base leading-relaxed max-w-2xl mx-auto">
           QuizForge started as a personal frustration — spending more time making flashcards than actually studying.
-          The idea was simple: paste your notes, get an instant exam. Now it's a full platform that reads your documents,
+          The idea was simple: paste your notes, get an instant exam. Now it&apos;s a full platform that reads your documents,
           understands the material, and generates exam-quality MCQs with explanations and analytics — so revision
           becomes active, not passive.
         </p>

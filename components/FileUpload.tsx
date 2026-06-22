@@ -3,7 +3,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { validateFile } from '@/lib/file-validation';
-import LoadingSpinner from './LoadingSpinner';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
 
 interface FileUploadProps {
@@ -55,9 +54,6 @@ export default function FileUpload({ onFileUploaded, onAnalysisComplete, isAnaly
     accept: {
       'application/pdf': ['.pdf'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'application/msword': ['.doc'],
-      'application/vnd.ms-powerpoint': ['.ppt'],
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
     },
     maxFiles: 1,
     maxSize: 10 * 1024 * 1024,
@@ -103,7 +99,7 @@ export default function FileUpload({ onFileUploaded, onAnalysisComplete, isAnaly
                 : 'Drag & drop your study material'}
             </p>
             <p className="text-white/40 text-sm">
-              {fileName ? 'Click to choose a different file' : 'or click to browse — PDF, DOCX, PPT · Max 10 MB'}
+              {fileName ? 'Click to choose a different file' : 'or click to browse — PDF, DOCX · Max 10 MB'}
             </p>
           </div>
         </div>

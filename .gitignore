@@ -33,6 +33,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# local database
+*.db
+*.db-journal
+prisma/dev.db
+
 /lib/generated/prisma
 
 # audit report
