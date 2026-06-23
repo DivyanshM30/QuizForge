@@ -1,22 +1,29 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, AreaChart, Area,
-} from 'recharts';
-import {
-  TrendingUp, Trophy, Target, Clock, Zap, ChevronRight,
-  Upload, Sparkles, X, Loader2, FileText, Flame, BarChart3,
+  Trophy, Target, Clock, Zap, ChevronRight,
+  Upload, Sparkles, X, Loader2, FileText, Flame,
 } from 'lucide-react';
 import Link from 'next/link';
-import { QuizResult } from '@/lib/types';
-import { formatTime } from '@/lib/quiz-utils';
-import { validateFile } from '@/lib/file-validation';
-import { useQuizStore } from '@/store/quiz-store';
+import { formatTime, accuracyTextClass } from '@/lib/quiz-utils';
+import { useHistory } from '@/hooks/useHistory';
+import { useFileUpload } from '@/hooks/useFileUpload';
 import AppNav from '@/components/AppNav';
+
+/* Recharts is lazy-loaded so it stays out of the dashboard's initial bundle. */
+const DashboardCharts = dynamic(() => import('@/components/charts/DashboardCharts'), {
+  ssr: false,
+  loading: () => (
+    <div className="grid md:grid-cols-2 gap-4">
+      <div className="liquid-glass rounded-2xl h-[248px] animate-pulse" />
+      <div className="liquid-glass rounded-2xl h-[248px] animate-pulse" />
+    </div>
+  ),
+});
 
 /* ─── Stat Card ──────────────────────────────────────────── */
 interface StatCardProps {
@@ -48,89 +55,70 @@ function StatCard({ icon, label, value, subtext, color, delay = 0 }: StatCardPro
   );
 }
 
-/* ─── Accuracy color helper ──────────────────────────────── */
-const accuracyColor = (acc: number) =>
-  acc >= 80 ? 'text-green-400' : acc >= 60 ? 'text-yellow-400' : 'text-red-400';
-
-const getBarColor = (pct: number) =>
-  pct >= 80 ? '#4ade80' : pct >= 60 ? '#facc15' : '#f87171';
-
 /* ─── Component ──────────────────────────────────────────── */
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const selectedFileRef = useRef<File | null>(null);
-  const { setDocumentText } = useQuizStore();
 
-  const [history, setHistory] = useState<QuizResult[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { history, isLoading } = useHistory({ enabled: status === 'authenticated' });
 
-  // Upload state
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'analyzing' | 'error'>('idle');
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const {
+    fileInputRef,
+    selectedFileRef,
+    fileName,
+    isDragging,
+    uploadState,
+    isBusy,
+    handleGenerate,
+    onFileChange,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+    clearFile,
+    pillLabel,
+  } = useFileUpload();
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
 
-  const fetchHistory = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/history');
-      if (!res.ok) throw new Error('Failed to fetch history');
-      const data = await res.json();
-      setHistory(data);
-    } catch (err) {
-      console.error('Failed to fetch history:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  /* ── Analytics computation (memoized; only recomputes when history changes) ── */
+  const {
+    totalQuizzes, avgScore, topScore, totalQuestions, totalCorrect,
+    avgTime, streak, performanceData, topicAggregated,
+  } = useMemo(() => {
+    const totalQuizzes = history.length;
+    const avgScore = totalQuizzes > 0
+      ? Math.round(history.reduce((sum, q) => sum + q.accuracy, 0) / totalQuizzes)
+      : 0;
+    const topScore = totalQuizzes > 0
+      ? Math.max(...history.map(q => q.accuracy))
+      : 0;
+    const totalQuestions = history.reduce((sum, q) => sum + q.totalQuestions, 0);
+    const totalCorrect = history.reduce((sum, q) => sum + q.score, 0);
+    const avgTime = totalQuizzes > 0
+      ? Math.round(history.reduce((sum, q) => sum + q.timeTaken, 0) / totalQuizzes)
+      : 0;
 
-  useEffect(() => {
-    if (status === 'authenticated') fetchHistory();
-  }, [status, fetchHistory]);
-
-  /* ── Analytics computation ── */
-  const totalQuizzes = history.length;
-  const avgScore = totalQuizzes > 0
-    ? Math.round(history.reduce((sum, q) => sum + q.accuracy, 0) / totalQuizzes)
-    : 0;
-  const topScore = totalQuizzes > 0
-    ? Math.max(...history.map(q => q.accuracy))
-    : 0;
-  const totalQuestions = history.reduce((sum, q) => sum + q.totalQuestions, 0);
-  const totalCorrect = history.reduce((sum, q) => sum + q.score, 0);
-  const avgTime = totalQuizzes > 0
-    ? Math.round(history.reduce((sum, q) => sum + q.timeTaken, 0) / totalQuizzes)
-    : 0;
-
-  /* streak: consecutive quizzes with accuracy >= 60 (most recent first) */
-  const streak = (() => {
-    let count = 0;
+    /* streak: consecutive quizzes with accuracy >= 60 (most recent first) */
+    let streak = 0;
     for (const q of history) {
-      if (q.accuracy >= 60) count++;
+      if (q.accuracy >= 60) streak++;
       else break;
     }
-    return count;
-  })();
 
-  /* Performance over time (last 10 quizzes, chronological) */
-  const performanceData = [...history]
-    .reverse()
-    .slice(-10)
-    .map((q, i) => ({
-      quiz: `#${i + 1}`,
-      accuracy: q.accuracy,
-      score: q.score,
-      total: q.totalQuestions,
-    }));
+    /* Performance over time (last 10 quizzes, chronological) */
+    const performanceData = [...history]
+      .reverse()
+      .slice(-10)
+      .map((q, i) => ({
+        quiz: `#${i + 1}`,
+        accuracy: q.accuracy,
+        score: q.score,
+        total: q.totalQuestions,
+      }));
 
-  /* Topic aggregation across all quizzes */
-  const topicAggregated = (() => {
+    /* Topic aggregation across all quizzes */
     const map = new Map<string, { correct: number; total: number }>();
     history.forEach(q => {
       q.topicPerformance?.forEach(tp => {
@@ -140,7 +128,7 @@ export default function DashboardPage() {
         map.set(tp.topic, existing);
       });
     });
-    return Array.from(map.entries())
+    const topicAggregated = Array.from(map.entries())
       .map(([topic, stats]) => ({
         topic: topic.length > 16 ? topic.slice(0, 16) + '…' : topic,
         fullTopic: topic,
@@ -150,89 +138,12 @@ export default function DashboardPage() {
       }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 8);
-  })();
 
-  /* ── File upload handlers (mirrored from HeroSection) ── */
-  const processFile = useCallback(async (file: File) => {
-    const validation = validateFile(file);
-    if (!validation.valid) {
-      setUploadError(validation.error || 'Invalid file');
-      setUploadState('error');
-      return;
-    }
-    setFileName(file.name);
-    setUploadError(null);
-    setUploadState('uploading');
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      setUploadState('analyzing');
-      const res = await fetch('/api/analyze-document', { method: 'POST', body: formData });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to analyze document');
-      }
-      const data = await res.json();
-      setDocumentText(data.text);
-      router.push('/upload?step=config');
-    } catch (err: any) {
-      setUploadError(err.message || 'Upload failed');
-      setUploadState('error');
-    }
-  }, [router, setDocumentText]);
-
-  const selectFile = (file: File) => {
-    const validation = validateFile(file);
-    if (!validation.valid) {
-      setUploadError(validation.error || 'Invalid file');
-      setUploadState('error');
-      selectedFileRef.current = null;
-      return;
-    }
-    selectedFileRef.current = file;
-    setFileName(file.name);
-    setUploadState('idle');
-    setUploadError(null);
-  };
-
-  const handleGenerate = () => {
-    if (isBusy) return;
-    if (uploadState === 'error') {
-      setUploadState('idle');
-      setFileName(null);
-      selectedFileRef.current = null;
-      return;
-    }
-    if (selectedFileRef.current) {
-      processFile(selectedFileRef.current);
-    } else {
-      fileInputRef.current?.click();
-    }
-  };
-
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) selectFile(file);
-    e.target.value = '';
-  };
-
-  const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-  const onDragLeave = () => setIsDragging(false);
-  const onDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) selectFile(file);
-  };
-
-  const isBusy = uploadState === 'uploading' || uploadState === 'analyzing';
-
-  const pillLabel = () => {
-    if (uploadState === 'uploading') return 'Uploading…';
-    if (uploadState === 'analyzing') return 'Reading document…';
-    if (uploadState === 'error') return uploadError ?? 'Upload failed — click Generate to retry';
-    return fileName ?? 'Drop your PDF, DOCX, or click to browse…';
-  };
+    return {
+      totalQuizzes, avgScore, topScore, totalQuestions, totalCorrect,
+      avgTime, streak, performanceData, topicAggregated,
+    };
+  }, [history]);
 
   /* ── Loading state ── */
   if (isLoading || status === 'loading') {
@@ -318,109 +229,7 @@ export default function DashboardPage() {
 
         {/* ── Charts Row ── */}
         {totalQuizzes > 0 && (
-          <div className="grid md:grid-cols-2 gap-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
-
-            {/* Accuracy over time */}
-            <div className="liquid-glass rounded-2xl p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp size={14} className="text-white/40" />
-                <span className="text-white/40 text-xs font-medium uppercase tracking-widest">
-                  Accuracy Over Time
-                </span>
-              </div>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={performanceData} margin={{ top: 4, right: 4, bottom: 4, left: -20 }}>
-                  <defs>
-                    <linearGradient id="accGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#818cf8" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#818cf8" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis
-                    dataKey="quiz"
-                    stroke="rgba(255,255,255,0.15)"
-                    tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }}
-                  />
-                  <YAxis
-                    stroke="rgba(255,255,255,0.15)"
-                    tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }}
-                    domain={[0, 100]}
-                    width={35}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'rgba(0,0,0,0.85)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '12px',
-                      color: 'white',
-                      fontSize: 12,
-                    }}
-                    formatter={(value: number) => [`${value}%`, 'Accuracy']}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="accuracy"
-                    stroke="#818cf8"
-                    strokeWidth={2}
-                    fill="url(#accGradient)"
-                    dot={{ r: 3, fill: '#818cf8', stroke: '#818cf8' }}
-                    activeDot={{ r: 5, fill: '#a5b4fc' }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Topic mastery */}
-            {topicAggregated.length > 0 && (
-              <div className="liquid-glass rounded-2xl p-5 space-y-4">
-                <div className="flex items-center gap-2">
-                  <BarChart3 size={14} className="text-white/40" />
-                  <span className="text-white/40 text-xs font-medium uppercase tracking-widest">
-                    Topic Mastery
-                  </span>
-                </div>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={topicAggregated} margin={{ top: 4, right: 4, bottom: 50, left: -20 }}>
-                    <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis
-                      dataKey="topic"
-                      stroke="rgba(255,255,255,0.15)"
-                      tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
-                      angle={-35}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis
-                      stroke="rgba(255,255,255,0.15)"
-                      tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }}
-                      domain={[0, 100]}
-                      width={35}
-                    />
-                    <Tooltip
-                      cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-                      contentStyle={{
-                        background: 'rgba(0,0,0,0.85)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '12px',
-                        color: 'white',
-                        fontSize: 12,
-                      }}
-                      formatter={(value: number, _: any, props: any) => [
-                        `${value}%  (${props.payload.correct}/${props.payload.total})`,
-                        props.payload.fullTopic,
-                      ]}
-                    />
-                    <Bar dataKey="percentage" radius={[6, 6, 0, 0]}>
-                      {topicAggregated.map((entry, i) => (
-                        <Cell key={i} fill={getBarColor(entry.percentage)} fillOpacity={0.8} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
+          <DashboardCharts performanceData={performanceData} topicAggregated={topicAggregated} />
         )}
 
         {/* ── New Quiz Upload ── */}
@@ -455,7 +264,7 @@ export default function DashboardPage() {
             </span>
             {fileName && !isBusy && (
               <button
-                onClick={(e) => { e.stopPropagation(); setFileName(null); setUploadState('idle'); selectedFileRef.current = null; }}
+                onClick={(e) => { e.stopPropagation(); clearFile(); }}
                 className="text-white/30 hover:text-white/60 transition-colors p-1 cursor-pointer flex-shrink-0"
                 aria-label="Clear file"
               >
@@ -528,7 +337,7 @@ export default function DashboardPage() {
                   className="liquid-glass rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-white/[0.03] transition-colors"
                 >
                   <div className="flex-1 min-w-0 flex items-center gap-4">
-                    <span className={`text-2xl font-bold tabular-nums ${accuracyColor(quiz.accuracy)}`}>
+                    <span className={`text-2xl font-bold tabular-nums ${accuracyTextClass(quiz.accuracy)}`}>
                       {quiz.accuracy}%
                     </span>
                     <div className="min-w-0 space-y-0.5">

@@ -4,6 +4,7 @@ import { QuizConfig, Question } from '@/lib/types';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { QUIZ_LIMITS } from '@/lib/constants';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -46,16 +47,22 @@ export async function POST(request: NextRequest) {
     };
 
     // Validate config
-    if (quizConfig.numQuestions < 5 || quizConfig.numQuestions > 50) {
+    if (
+      quizConfig.numQuestions < QUIZ_LIMITS.MIN_QUESTIONS ||
+      quizConfig.numQuestions > QUIZ_LIMITS.MAX_QUESTIONS
+    ) {
       return NextResponse.json(
-        { error: 'Number of questions must be between 5 and 50' },
+        { error: `Number of questions must be between ${QUIZ_LIMITS.MIN_QUESTIONS} and ${QUIZ_LIMITS.MAX_QUESTIONS}` },
         { status: 400 }
       );
     }
 
-    if (quizConfig.timeLimit < 5 || quizConfig.timeLimit > 120) {
+    if (
+      quizConfig.timeLimit < QUIZ_LIMITS.MIN_TIME ||
+      quizConfig.timeLimit > QUIZ_LIMITS.MAX_TIME
+    ) {
       return NextResponse.json(
-        { error: 'Time limit must be between 5 and 120 minutes' },
+        { error: `Time limit must be between ${QUIZ_LIMITS.MIN_TIME} and ${QUIZ_LIMITS.MAX_TIME} minutes` },
         { status: 400 }
       );
     }

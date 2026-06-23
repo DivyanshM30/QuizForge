@@ -1,16 +1,20 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { QuizResult } from '@/lib/types';
-import { formatTime } from '@/lib/quiz-utils';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { formatTime, accuracyTextClass } from '@/lib/quiz-utils';
 import { Download, RotateCcw } from 'lucide-react';
+
+/* Recharts is lazy-loaded so it stays out of the results route's initial bundle. */
+const ResultsTopicChart = dynamic(() => import('@/components/charts/ResultsTopicChart'), {
+  ssr: false,
+  loading: () => <div className="h-[240px] animate-pulse rounded-2xl bg-white/[0.03]" />,
+});
 
 interface ResultsDashboardProps {
   result: QuizResult;
   onRetake: () => void;
 }
-
-const getBarColor = (pct: number) => pct >= 80 ? '#4ade80' : pct >= 60 ? '#facc15' : '#f87171';
 
 export default function ResultsDashboard({ result, onRetake }: ResultsDashboardProps) {
   const chartData = result.topicPerformance.map((t) => ({
@@ -30,7 +34,7 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
   };
 
   /* Score ring colour */
-  const scoreColor = result.accuracy >= 80 ? 'text-green-400' : result.accuracy >= 60 ? 'text-yellow-400' : 'text-red-400';
+  const scoreColor = accuracyTextClass(result.accuracy);
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-5">
@@ -60,26 +64,7 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
       {chartData.length > 0 && (
         <div className="liquid-glass rounded-3xl p-6 space-y-4">
           <p className="text-white/40 text-xs font-medium uppercase tracking-widest">Topic Performance</p>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 60, left: 0 }}>
-              <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-              <XAxis
-                dataKey="topic" stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
-                angle={-40} textAnchor="end" height={70}
-              />
-              <YAxis stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} domain={[0, 100]} width={30} />
-              <Tooltip
-                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-                contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', fontSize: 12 }}
-                formatter={(value: number, _: any, props: any) => [`${value}%`, props.payload.fullTopic]}
-              />
-              <Bar dataKey="percentage" radius={[6, 6, 0, 0]}>
-                {chartData.map((entry, i) => (
-                  <Cell key={i} fill={getBarColor(entry.percentage)} fillOpacity={0.85} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <ResultsTopicChart chartData={chartData} />
         </div>
       )}
 

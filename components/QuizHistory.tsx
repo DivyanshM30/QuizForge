@@ -1,42 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { QuizResult } from '@/lib/types';
-import { formatTime } from '@/lib/quiz-utils';
+import { formatTime, accuracyTextClass } from '@/lib/quiz-utils';
+import { useHistory } from '@/hooks/useHistory';
 import Link from 'next/link';
 import { Trash2, ChevronRight, FileText, Zap } from 'lucide-react';
 
 export default function QuizHistory() {
-  const [history, setHistory] = useState<QuizResult[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchHistory = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/history');
-      if (!res.ok) throw new Error('Failed to fetch history');
-      setHistory(await res.json());
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchHistory(); }, []);
+  const { history, isLoading, error, refetch } = useHistory();
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this quiz result?')) return;
     try {
       const res = await fetch(`/api/history/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchHistory();
+      if (res.ok) refetch();
       else alert('Failed to delete');
     } catch { alert('An error occurred'); }
   };
-
-  const accuracyColor = (acc: number) =>
-    acc >= 80 ? 'text-green-400' : acc >= 60 ? 'text-yellow-400' : 'text-red-400';
 
   if (isLoading) {
     return (
@@ -81,7 +60,7 @@ export default function QuizHistory() {
           {/* Score + meta */}
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className={`text-2xl font-bold tabular-nums ${accuracyColor(quiz.accuracy)}`}>
+              <span className={`text-2xl font-bold tabular-nums ${accuracyTextClass(quiz.accuracy)}`}>
                 {quiz.accuracy}%
               </span>
               <span className="text-white/50 text-sm">

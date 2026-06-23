@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { QuizConfig } from '@/lib/types';
+import { QUIZ_LIMITS } from '@/lib/constants';
 import { Zap } from 'lucide-react';
 
 interface QuizConfigProps {
@@ -19,7 +20,10 @@ export default function QuizConfig({ onStart, isGenerating = false }: QuizConfig
 
   const handleStart = () => onStart({ numQuestions, timeLimit, difficulty });
 
-  const sliderPct = ((numQuestions - 5) / 45) * 100;
+  const sliderPct =
+    ((numQuestions - QUIZ_LIMITS.MIN_QUESTIONS) /
+      (QUIZ_LIMITS.MAX_QUESTIONS - QUIZ_LIMITS.MIN_QUESTIONS)) *
+    100;
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -32,7 +36,7 @@ export default function QuizConfig({ onStart, isGenerating = false }: QuizConfig
             <span className="text-white text-2xl font-semibold tabular-nums">{numQuestions}</span>
           </div>
           <input
-            type="range" min="5" max="50" value={numQuestions}
+            type="range" min={QUIZ_LIMITS.MIN_QUESTIONS} max={QUIZ_LIMITS.MAX_QUESTIONS} value={numQuestions}
             onChange={(e) => setNumQuestions(Number(e.target.value))}
             className="w-full h-1 rounded-full appearance-none cursor-pointer"
             style={{
@@ -40,7 +44,7 @@ export default function QuizConfig({ onStart, isGenerating = false }: QuizConfig
             }}
           />
           <div className="flex justify-between text-white/30 text-xs font-medium">
-            <span>5</span><span>50</span>
+            <span>{QUIZ_LIMITS.MIN_QUESTIONS}</span><span>{QUIZ_LIMITS.MAX_QUESTIONS}</span>
           </div>
         </div>
 

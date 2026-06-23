@@ -4,17 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { LogOut, History, Zap, LayoutDashboard } from 'lucide-react';
-
-function QuizForgeLogo() {
-  return (
-    <svg width={22} height={22} viewBox="0 0 24 24" fill="none" className="text-white flex-shrink-0">
-      <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth={1.8} />
-      <path d="M8 9h8M8 12h5" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" />
-      <circle cx="17" cy="17" r="3.5" fill="currentColor" />
-      <path d="M15.8 17l.8.9 1.6-1.8" stroke="black" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+import { QuizForgeLogo } from '@/components/icons';
 
 interface AppNavProps {
   /** Optional extra actions injected to the right side */
@@ -30,7 +20,7 @@ export default function AppNav({ actions }: AppNavProps) {
       <div className="liquid-glass rounded-full px-5 py-3 flex items-center justify-between max-w-6xl mx-auto">
         {/* Left: logo */}
         <Link href="/" className="flex items-center gap-2.5 cursor-pointer group">
-          <QuizForgeLogo />
+          <QuizForgeLogo size={22} className="text-white flex-shrink-0" />
           <span className="text-white font-semibold text-base leading-none">QuizForge</span>
         </Link>
 

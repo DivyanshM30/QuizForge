@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
+import { deserializeQuizResult } from "@/lib/quiz-utils"
 
 export const dynamic = 'force-dynamic'
 
@@ -35,15 +36,7 @@ export async function GET(
     }
 
     // Parse the JSON string fields back to objects for the frontend
-    const formattedResult = {
-      ...result,
-      config: JSON.parse(result.config),
-      topicPerformance: JSON.parse(result.topicPerformance),
-      weakTopics: JSON.parse(result.weakTopics),
-      revisionSuggestions: JSON.parse(result.revisionSuggestions),
-      questions: JSON.parse(result.questions),
-      userAnswers: JSON.parse(result.userAnswers),
-    }
+    const formattedResult = deserializeQuizResult(result)
 
     return NextResponse.json(formattedResult)
   } catch (error) {

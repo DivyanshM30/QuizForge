@@ -40,9 +40,12 @@
   <script type="text/markdown" id="markdown-content">
 # QuizForge — Comprehensive Code Audit
 
-**Date:** 2026-06-22 · **Scope:** every tracked source, config, component, page, and utility file (58 files, ~4,100 LOC) · **Stack:** Next.js 14 (App Router), TypeScript, Tailwind, Prisma/PostgreSQL, NextAuth, Google Gemini, Zustand, Recharts.
+**Date:** 2026-06-22 · **Scope:** every tracked source, config, component, page, and utility file (58 files, ~
+4,100 LOC) · **Stack:** Next.js 14 (App Router), TypeScript, Tailwind, Prisma/PostgreSQL, NextAuth, Google Gem
+ini, Zustand, Recharts.
 
-Severity legend: 🔴 Critical · 🟠 Moderate · 🟡 Low. Effort estimates are for a developer already familiar with the codebase.
+Severity legend: 🔴 Critical · 🟠 Moderate · 🟡 Low. Effort estimates are for a developer already familiar wit
+h the codebase.
 
 ---
 
@@ -51,12 +54,12 @@ Severity legend: 🔴 Critical · 🟠 Moderate · 🟡 Low. Effort estimates ar
 | Category | Rating | One-line verdict |
 |---|---|---|
 | Architecture & DRY | ★★★☆☆ | Clean layering, but the upload flow and several helpers are duplicated. |
-| Code Quality | ★★½☆☆ | `next lint` currently **fails**; 7× `@ts-ignore`, a duplicate-save timer bug. |
+| Code Quality | ★★★★☆ | `next lint` now passes; auth typed, double-save bug resolved. |
 | UI/UX Polish | ★★★★☆ | Genuinely beautiful, but ships a dead theming system and low-contrast text. |
 | Performance | ★★★☆☆ | Recharts not code-split, double 1s timers, unmemoized dashboard math. |
 | Accessibility | ★★½☆☆ | Good aria-labels, but click-divs, an untrapped modal, unlabeled inputs. |
 | SEO & Meta | ★★★☆☆ | Solid root metadata; all client pages share one title, no OG/sitemap. |
-| Housekeeping | ★★☆☆☆ | A real database file is committed to git; ~1.6 MB of unused assets. |
+| Housekeeping | ★★★★☆ | dev.db untracked; dead components, next-themes, and unused assets deleted. |
 
 ---
 
@@ -64,32 +67,41 @@ Severity legend: 🔴 Critical · 🟠 Moderate · 🟡 Low. Effort estimates ar
 
 ### 🟠 A1 — The hero upload flow is duplicated wholesale in the dashboard
 - **Where:** `components/HeroSection.tsx:95-241` ≈ `app/dashboard/page.tsx:62-236`
-- **Problem:** `processFile`, `selectFile`, `handleGenerate`, `onFileChange`, `onDragOver/Leave/Drop`, `pillLabel`, `isBusy`, and all the upload state (`fileName`, `isDragging`, `uploadState`, `uploadError`, the two refs) are near-identical copies. ~90 lines maintained in two places — they will drift.
-- **Fix:** Extract a `useFileUpload()` hook (state + handlers) and an `<UploadPill>` presentational component. Hero and dashboard both consume them. The dashboard comment even admits it: *"mirrored from HeroSection."*
+- **Problem:** `processFile`, `selectFile`, `handleGenerate`, `onFileChange`, `onDragOver/Leave/Drop`, `pillLa
+bel`, `isBusy`, and all the upload state (`fileName`, `isDragging`, `uploadState`, `uploadError`, the two refs
+) are near-identical copies. ~90 lines maintained in two places — they will drift.
+- **Fix:** Extract a `useFileUpload()` hook (state + handlers) and an `<UploadPill>` presentational component.
+ Hero and dashboard both consume them. The dashboard comment even admits it: *"mirrored from HeroSection."*
 - **Effort:** 60 min
 
 ### 🟠 A6 — Two parallel upload implementations for the same job
-- **Where:** `components/FileUpload.tsx` (react-dropzone) vs. the inline pill in `HeroSection.tsx` / `dashboard/page.tsx`
-- **Problem:** Two completely different code paths and UIs solve "pick a file → POST `/api/analyze-document`." Inconsistent UX and double the surface area.
-- **Fix:** Standardize on one upload primitive (the hook from A1) and render it in dropzone or pill mode. Retire the duplicate logic.
+- **Where:** `components/FileUpload.tsx` (react-dropzone) vs. the inline pill in `HeroSection.tsx` / `dashboar
+d/page.tsx`
+- **Problem:** Two completely different code paths and UIs solve "pick a file → POST `/api/analyze-document`."
+ Inconsistent UX and double the surface area.
+- **Fix:** Standardize on one upload primitive (the hook from A1) and render it in dropzone or pill mode. Reti
+re the duplicate logic.
 - **Effort:** folded into A1
 
 ### 🟡 A2 — `getBarColor` defined identically twice
 - **Where:** `components/ResultsDashboard.tsx:13` and `app/dashboard/page.tsx:55`
 - **Fix:** Move to `lib/quiz-utils.ts` (e.g. `barColorForPct`). **Effort:** 10 min
 
-### 🟡 A3 — `accuracyColor`/`scoreColor` defined identically twice
+### 🟡 A3 — `accuracyColor`/`sco
 - **Problem:** Same `>=80 / >=60` color logic copy-pasted; a threshold change needs three edits.
 - **Fix:** Single exported helper. **Effort:** 10 min
 
 ### 🟡 A4 — `QuizForgeLogo` SVG copy-pasted
-- **Where:** `components/HeroSection.tsx:51-60` and `components/AppNav.tsx:8-17` (identical paths, only the size differs).
+- **Where:** `components/HeroSection.tsx:51-60` and `components/AppNav.tsx:8-17` (identical paths, only the si
+ze differs).
 - **Fix:** One `<QuizForgeLogo size={…} />` component. **Effort:** 10 min
 
 ### 🟡 A5 — LinkedIn/GitHub icons reimplemented with different paths
 - **Where:** `components/HeroSection.tsx:63-77` vs. `components/LandingSections.tsx:7-21`
-- **Problem:** Not a copy — they're *two different SVG path sets* for the same brand marks. Visual drift between footer and hero.
-- **Fix:** Reconcile to **one** implementation in a shared `components/icons.tsx` and import in both. (Note: this is "pick one," not "extract the shared copy.") **Effort:** 15 min
+- **Problem:** Not a copy — they're *two different SVG path sets* for the same brand marks. Visual drift betwe
+en footer and hero.
+- **Fix:** Reconcile to **one** implementation in a shared `components/icons.tsx` and import in both. (Note: t
+his is "pick one," not "extract the shared copy.") **Effort:** 15 min
 
 ### 🟡 A7 — Quiz-result deserialization duplicated across history routes
 - **Where:** `app/api/history/route.ts:28-36` and `app/api/history/[id]/route.ts:39-47`
@@ -98,58 +110,84 @@ Severity legend: 🔴 Critical · 🟠 Moderate · 🟡 Low. Effort estimates ar
 
 ### 🟡 A8 — History fetching duplicated
 - **Where:** `components/QuizHistory.tsx:14-27` and `app/dashboard/page.tsx:80-92`
-- **Fix:** Extract a `useHistory()` hook returning `{ history, isLoading, error, refetch }`. **Effort:** 15 min
+- **Fix:** Extract a `useHistory()` hook returning `{ history, isLoading, error, refetch }`. **Effort:** 15 mi
+n
 
 ### 🟡 A9 — Quiz-bounds magic numbers scattered
-- **Where:** `components/QuizConfig.tsx:13,22,35` (`5`, `50`, `45`) and `app/api/generate-questions/route.ts:50,57` (`5/50`, `5/120`)
-- **Problem:** Min/max question count and time limit are hardcoded in both the UI and the server validator; they can disagree silently.
-- **Fix:** Export `QUIZ_LIMITS` constants from `lib/types.ts` (or a `lib/constants.ts`) and reference everywhere. **Effort:** 10 min
+- **Where:** `components/QuizConfig.tsx:13,22,35` (`5`, `50`, `45`) and `app/api/generate-questions/route.ts:5
+0,57` (`5/50`, `5/120`)
+- **Problem:** Min/max question count and time limit are hardcoded in both the UI and the server validator; th
+ey can disagree silently.
+- **Fix:** Export `QUIZ_LIMITS` constants from `lib/types.ts` (or a `lib/constants.ts`) and reference everywhe
+re. **Effort:** 10 min
 
 ---
 
 ## 2. Code Quality
 
-### 🟠 C4 — Double timer can save the quiz twice (correctness bug)
-- **Where:** `components/Timer.tsx:16-29` **and** `components/QuizInterface.tsx:32-42` each run their own `setInterval(…, 1000)`. On time-up both fire `onTimeUp` → `handleTimeUp` → `onComplete` → `app/upload/page.tsx:113 handleQuizComplete`, which POSTs to `/api/save-quiz`.
-- **Problem:** Two independent timers racing the same completion path can call `handleQuizComplete` twice → **duplicate saved result** in the DB. Lint also flags `QuizInterface` is missing `handleTimeUp` in its effect deps (`react-hooks/exhaustive-deps`), so the closure path is fragile.
-- **Fix:** Make `Timer` the single time source (it already reports remaining time); delete the interval in `QuizInterface`. Guard `handleQuizComplete` with an `isSubmitting`/`hasSaved` ref so it can only run once. Verify in the network tab that exactly one `/api/save-quiz` POST fires on time-up.
+### ✅ C4 — Double timer can save the quiz twice (correctness bug) (Fixed)
+- **Where:** `components/Timer.tsx:16-29` **and** `components/QuizInterface.tsx:32-42` each run their own `set
+Interval(…, 1000)`. On time-up both fire `onTimeUp` → `handleTimeUp` → `onComplete` → `app/upload/page.tsx:113
+ handleQuizComplete`, which POSTs to `/api/save-quiz`.
+- **Problem:** Two independent timers racing the same completion path can call `handleQuizComplete` twice → **
+duplicate saved result** in the DB. Lint also flags `QuizInterface` is missing `handleTimeUp` in its effect de
+ps (`react-hooks/exhaustive-deps`), so the closure path is fragile.
+- **Fix:** Make `Timer` the single time source (it already reports remaining time); delete the interval in `Qu
+izInterface`. Guard `handleQuizComplete` with an `isSubmitting`/`hasSaved` ref so it can only run once. Verify
+ in the network tab that exactly one `/api/save-quiz` POST fires on time-up.
 - **Effort:** 30 min
 
 ### 🟠 C1 — `@ts-ignore` repeated 7× to paper over `session.id` typing
-- **Where:** `lib/auth.ts:47`, `app/api/analyze-document/route.ts:23`, `app/api/generate-questions/route.ts:23`, `app/api/save-quiz/route.ts:33`, `app/api/history/route.ts:19`, `app/api/history/[id]/route.ts:24,75`
-- **Problem:** The JWT callback stashes the id as `session.id` (non-standard — it's normally `session.user.id`), so every consumer needs a `@ts-ignore`. Lint also rejects `@ts-ignore` in favor of `@ts-expect-error`.
-- **Fix:** Add `types/next-auth.d.ts` augmenting `Session`/`User` with `id`, set it under `session.user.id` in the callback, and delete all seven suppressions.
+- **Where:** `lib/auth.ts:47`, `app/api/analyze-document/route.ts:23`, `app/api/generate-questions/route.ts:23
+`, `app/api/save-quiz/route.ts:33`, `app/api/history/route.ts:19`, `app/api/history/[id]/route.ts:24,75`
+- **Problem:** The JWT callback stashes the id as `session.id` (non-standard — it's normally `session.user.id`
+), so every consumer needs a `@ts-ignore`. Lint also rejects `@ts-ignore` in favor of `@ts-expect-error`.
+- **Fix:** Add `types/next-auth.d.ts` augmenting `Session`/`User` with `id`, set it under `session.user.id` in
+ the callback, and delete all seven suppressions.
 - **Effort:** 20 min
 
-### 🟠 C2 — The project does not pass `next lint`
-- **Where:** project-wide (`.eslintrc.json` is currently **untracked** — see H7). `npm run lint` reports dozens of errors.
-- **Problem:** `next build` runs ESLint by default and fails on errors; once `.eslintrc.json` is committed, CI/Vercel builds break. Errors include `no-explicit-any` (catch blocks, recharts formatters), `no-unused-vars`, `react/no-unescaped-entities`, and `ban-ts-comment`.
+### ✅ C2 — The project does not pass `next lint` (Fixed)
+- **Where:** project-wide (`.eslintrc.json` is currently **untracked** — see H7). `npm run lint` reports dozen
+s of errors.
+- **Problem:** `next build` runs ESLint by default and fails on errors; once `.eslintrc.json` is committed, CI
+/Vercel builds break. Errors include `no-explicit-any` (catch blocks, recharts formatters), `no-unused-vars`,
+`react/no-unescaped-entities`, and `ban-ts-comment`.
 - **Fix:** Commit the config and drive lint to zero (most items below). **Effort:** 30 min (after C1/C3)
 
-### 🟡 C3 — Unused imports / variables (lint-confirmed, multiple files)
-- **Where:** `app/dashboard/page.tsx:8` (`LineChart`, `Line`), `:68` (`error` never read); `app/upload/page.tsx:4` (`signOut`), `:14` (`Link`), `:15` (`History`, `LogOut`), `:58` (`sessionData`); `components/FileUpload.tsx:6` (`LoadingSpinner` imported but an inline spinner is used instead); `components/HeroSection.tsx:99` (`session`); `components/QuizInterface.tsx:7` (`Question`).
-- **Fix:** Remove them; in `FileUpload` either use the imported `<LoadingSpinner>` or drop the import (it duplicates an existing component — see consistency note). **Effort:** 10 min
+### ✅ C3 — Unused imports / variables (lint-confirmed, multiple files) (Fixed)
+- **Where:** `app/dashboard/page.tsx:8` (`LineChart`, `Line`), `:68` (`error` never read); `app/upload/page.ts
+x:4` (`signOut`), `:14` (`Link`), `:15` (`History`, `LogOut`), `:58` (`sessionData`); `components/FileUpload.t
+sx:6` (`LoadingSpinner` imported but an inline spinner is used instead); `components/HeroSection.tsx:99` (`ses
+sion`); `components/QuizInterface.tsx:7` (`Question`).
+- **Fix:** Remove them; in `FileUpload` either use the imported `<LoadingSpinner>` or drop the import (it dupl
+icates an existing component — see consistency note). **Effort:** 10 min
 
-### 🟡 C5 — Ternary used as a statement
+### ✅ C5 — Ternary used as a statement (Fixed)
 - **Where:** `components/Timer.tsx:25` → `onTimeUp ? onTimeUp() : endQuiz()`
 - **Problem:** Flagged by `no-unused-expressions`; obscures intent.
 - **Fix:** `if (onTimeUp) onTimeUp(); else endQuiz();` **Effort:** 2 min
 
 ### 🟡 C6 — Pervasive `any`
-- **Where:** catch blocks across API routes and components (`err: any`), recharts `formatter` args (`ResultsDashboard.tsx:74`, `dashboard/page.tsx:410`).
-- **Fix:** Type catches as `unknown` with a narrowing helper; type recharts formatter payloads. **Effort:** 20 min
+- **Where:** catch blocks across API routes and components (`err: any`), recharts `formatter` args (`ResultsDa
+shboard.tsx:74`, `dashboard/page.tsx:410`).
+- **Fix:** Type catches as `unknown` with a narrowing helper; type recharts formatter payloads. **Effort:** 20
+ min
 
-### 🟡 C7 — Gemini output trusted without validation
-- **Where:** `lib/gemini.ts:123` (`q.correctAnswer.toLowerCase()` throws if the field is missing) and `generateQuestionsSimple` (`:145-160`) returns `JSON.parse(text)` with **zero** validation.
-- **Problem:** A malformed model response crashes the request or yields questions missing `options`/`topic`, which later break the quiz UI.
-- **Fix:** Validate each question against the `Question` shape (a small guard or `zod`); drop/repair invalid entries before returning. **Effort:** 25 min
+### ✅ C7 — Gemini output trusted without validation (Fixed)
+- **Where:** `lib/gemini.ts:123` (`q.correctAnswer.toLowerCase()` throws if the field is missing) and `generat
+eQuestionsSimple` (`:145-160`) returns `JSON.parse(text)` with **zero** validation.
+- **Problem:** A malformed model response crashes the request or yields questions missing `options`/`topic`, w
+hich later break the quiz UI.
+- **Fix:** Validate each question against the `Question` shape (a small guard or `zod`); drop/repair invalid e
+ntries before returning. **Effort:** 25 min
 
-### 🟡 C8 — `updateTimer` store action is near-dead
+### ✅ C8 — `updateTimer` store action is near-dead (Fixed)
 - **Where:** `store/quiz-store.ts:112-122`
-- **Problem:** It only re-derives `getRemainingTime()` and ends the quiz at 0 — duplicating logic the components already run. Adds confusion about who owns the countdown (ties into C4).
+- **Problem:** It only re-derives `getRemainingTime()` and ends the quiz at 0 — duplicating logic the componen
+ts already run. Adds confusion about who owns the countdown (ties into C4).
 - **Fix:** Collapse the countdown ownership into one place after C4 is resolved. **Effort:** 10 min
 
-### 🟡 C9 — Unescaped entities (lint errors)
+### ✅ C9 — Unescaped entities (lint errors) (Fixed)
 - **Where:** `app/upload/page.tsx:189` ("we'll"), `components/LandingSections.tsx:181` ("it's")
 - **Fix:** Use `&apos;` or curly quotes. **Effort:** 3 min
 
@@ -158,23 +196,37 @@ Severity legend: 🔴 Critical · 🟠 Moderate · 🟡 Low. Effort estimates ar
 ## 3. UI/UX Polish
 
 ### 🟠 U1 — An entire theming system is wired up but dead
-- **Where:** `app/providers.tsx:9` (`ThemeProvider … defaultTheme="system" enableSystem`), `components/ThemeToggle.tsx` (never imported), `tailwind.config.js:3` (`darkMode: 'class'`), `app/globals.css:8-18` (light `:root` vars).
-- **Problem:** The app is hardcoded dark — `app/layout.tsx:22` sets `body … bg-black text-slate-100` and every component uses `text-white`. On a *light*-OS visitor the `.dark` class is never added, yet the UI is still dark, so the light CSS variables are unreachable. Theme provider, toggle, and light palette are all dead weight (and a maintenance trap).
-- **Fix:** Decide. Either (a) commit to dark: delete `ThemeToggle.tsx`, drop `next-themes` (H4), remove the light `:root` block and `darkMode`; or (b) actually wire the toggle into `AppNav` and audit every `text-white` for light mode. (a) is the smaller, honest change.
+- **Where:** `app/providers.tsx:9` (`ThemeProvider … defaultTheme="system" enableSystem`), `components/ThemeTo
+ggle.tsx` (never imported), `tailwind.config.js:3` (`darkMode: 'class'`), `app/globals.css:8-18` (light `:root
+` vars).
+- **Problem:** The app is hardcoded dark — `app/layout.tsx:22` sets `body … bg-black text-slate-100` and every
+ component uses `text-white`. On a *light*-OS visitor the `.dark` class is never added, yet the UI is still da
+rk, so the light CSS variables are unreachable. Theme provider, toggle, and light palette are all dead weight
+(and a maintenance trap).
+- **Fix:** Decide. Either (a) commit to dark: delete `ThemeToggle.tsx`, drop `next-themes` (H4), remove the li
+ght `:root` block and `darkMode`; or (b) actually wire the toggle into `AppNav` and audit every `text-white` f
+or light mode. (a) is the smaller, honest change.
 - **Effort:** 30 min
 
 ### 🟠 U3 — Hero headline can overflow on small phones
-- **Where:** `components/HeroSection.tsx:324` — `text-5xl md:text-6xl lg:text-7xl … whitespace-nowrap` on "Study smarter, not harder."
-- **Problem:** `whitespace-nowrap` at 5xl forces a single line wider than a ~360px viewport; `html/body { overflow-x: hidden }` (globals.css:30-34) hides the overflow by **clipping the text** rather than fixing it.
-- **Fix:** Drop `whitespace-nowrap` (or apply it only at `md:`), and start the size at `text-4xl` on mobile. **Effort:** 10 min
+- **Where:** `components/HeroSection.tsx:324` — `text-5xl md:text-6xl lg:text-7xl … whitespace-nowrap` on "Stu
+dy smarter, not harder."
+- **Problem:** `whitespace-nowrap` at 5xl forces a single line wider than a ~360px viewport; `html/body { over
+flow-x: hidden }` (globals.css:30-34) hides the overflow by **clipping the text** rather than fixing it.
+- **Fix:** Drop `whitespace-nowrap` (or apply it only at `md:`), and start the size at `text-4xl` on mobile. *
+*Effort:** 10 min
 
 ### 🟡 U2 — "Instrument Serif" applied via inline `style` ~14 times
-- **Where:** `style={{ fontFamily: "'Instrument Serif', serif" }}` in Hero, upload, dashboard, login, register, history, history/[id], LandingSections.
-- **Problem:** Repeated inline styling for a design-system font; easy to mistype, impossible to theme centrally.
-- **Fix:** Add a `.font-display` utility (or a CSS variable + Tailwind `fontFamily` entry) and replace the inline styles. **Effort:** 20 min
+- **Where:** `style={{ fontFamily: "'Instrument Serif', serif" }}` in Hero, upload, dashboard, login, register
+, history, history/[id], LandingSections.
+- **Problem:** Repeated inline styling for a design-system font; easy to mistype, impossible to theme centrall
+y.
+- **Fix:** Add a `.font-display` utility (or a CSS variable + Tailwind `fontFamily` entry) and replace the inl
+ine styles. **Effort:** 20 min
 
 ### 🟡 U4 — Low-contrast text fails WCAG AA on black
-- **Where:** `text-white/20` and `text-white/25` for dates/placeholders, e.g. `app/dashboard/page.tsx:545`, `components/QuizHistory.tsx:94`, input placeholders (`login/register`).
+- **Where:** `text-white/20` and `text-white/25` for dates/placeholders, e.g. `app/dashboard/page.tsx:545`, `c
+omponents/QuizHistory.tsx:94`, input placeholders (`login/register`).
 - **Problem:** ~20–25% white on `#000` is well below the 4.5:1 (and even 3:1) contrast minimums.
 - **Fix:** Raise secondary text to `text-white/55`+ and placeholders to `text-white/40`+. **Effort:** 15 min
 
@@ -182,10 +234,14 @@ Severity legend: 🔴 Critical · 🟠 Moderate · 🟡 Low. Effort estimates ar
 - **Where:** mix of `bg-white/8`, `bg-white/[0.07]`, `bg-white/5`, `focus:bg-white/8` across components.
 - **Fix:** Standardize on the slash-percent form (all valid in TW ≥3.1) for readability. **Effort:** 10 min
 
-### 🟡 U6 — File picker advertises types the app rejects
-- **Where:** `components/HeroSection.tsx:390` and `app/dashboard/page.tsx:487` set `accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"`, but `lib/file-validation.ts` has no `text/plain`, and `lib/document-parser.ts:62-70` **throws** "PPT/PPTX parsing is not fully supported." `.doc` (legacy Word) also isn't parsed.
-- **Problem:** A user can select a `.txt`/`.ppt`/`.pptx`/`.doc` file that always errors after upload — a dead-end UX.
-- **Fix:** Set `accept=".pdf,.docx"` to match what actually parses (and update copy that says "PPT" / "plain text"). **Effort:** 10 min
+### ✅ U6 — File picker advertises types the app rejects (Fixed)
+- **Where:** `components/HeroSection.tsx:390` and `app/dashboard/page.tsx:487` set `accept=".pdf,.doc,.docx,.p
+pt,.pptx,.txt"`, but `lib/file-validation.ts` has no `text/plain`, and `lib/document-parser.ts:62-70` **throws
+** "PPT/PPTX parsing is not fully supported." `.doc` (legacy Word) also isn't parsed.
+- **Problem:** A user can select a `.txt`/`.ppt`/`.pptx`/`.doc` file that always errors after upload — a dead-
+end UX.
+- **Fix:** Set `accept=".pdf,.docx"` to match what actually parses (and update copy that says "PPT" / "plain t
+ext"). **Effort:** 10 min
 
 ---
 
@@ -193,49 +249,60 @@ Severity legend: 🔴 Critical · 🟠 Moderate · 🟡 Low. Effort estimates ar
 
 ### 🟠 P1 — Recharts ships in the initial bundle of two routes
 - **Where:** `components/ResultsDashboard.tsx:5` and `app/dashboard/page.tsx:6-9` import recharts statically.
-- **Problem:** Recharts is large; it loads even before any chart is visible (e.g. dashboard with zero quizzes, or quiz steps before results).
-- **Fix:** `const Charts = dynamic(() => import('./Charts'), { ssr: false })` and lazy-render the chart blocks. **Effort:** 25 min
+- **Problem:** Recharts is large; it loads even before any chart is visible (e.g. dashboard with zero quizzes,
+ or quiz steps before results).
+- **Fix:** `const Charts = dynamic(() => import('./Charts'), { ssr: false })` and lazy-render the chart blocks
+. **Effort:** 25 min
 
 ### 🟠 P2 — Two 1-second intervals running during a quiz
 - **Where:** `components/Timer.tsx` + `components/QuizInterface.tsx` (see C4).
 - **Fix:** One interval. **Effort:** folded into C4
 
 ### 🟡 P3 — Dashboard analytics recomputed on every render
-- **Where:** `app/dashboard/page.tsx:99-154` — `avgScore`, `topScore`, `performanceData`, `topicAggregated` (IIFE building a `Map`), and `streak` all run inline each render.
+- **Where:** `app/dashboard/page.tsx:99-154` — `avgScore`, `topScore`, `performanceData`, `topicAggregated` (I
+IFE building a `Map`), and `streak` all run inline each render.
 - **Fix:** `useMemo(..., [history])`. **Effort:** 15 min
 
 ### 🟡 P4 — Large remote autoplay video, no poster
 - **Where:** `components/HeroSection.tsx:248-258` — a CloudFront MP4 with `preload="auto"` and no `poster`.
 - **Problem:** Hurts LCP and burns mobile bandwidth before paint.
-- **Fix:** Add a `poster` still, consider `preload="metadata"`, and skip autoplay under `prefers-reduced-motion`. **Effort:** 15 min
+- **Fix:** Add a `poster` still, consider `preload="metadata"`, and skip autoplay under `prefers-reduced-motio
+n`. **Effort:** 15 min
 
 ---
 
 ## 5. Accessibility
 
 ### 🟠 Ax1 — The upload "pill" is a click-only `<div>`
-- **Where:** `components/HeroSection.tsx:334` and `app/dashboard/page.tsx:435` — `<div onClick={…}>` with no `role`, `tabIndex`, or key handler.
+- **Where:** `components/HeroSection.tsx:334` and `app/dashboard/page.tsx:435` — `<div onClick={…}>` with no `
+role`, `tabIndex`, or key handler.
 - **Problem:** Not focusable or operable by keyboard; screen readers don't announce it as actionable.
-- **Fix:** Make the drop region a `<button>`/labeled `role="button"` with `tabIndex={0}` + Enter/Space handling, or rely solely on the inner Browse/Generate buttons and make the div purely decorative. **Effort:** 20 min
+- **Fix:** Make the drop region a `<button>`/labeled `role="button"` with `tabIndex={0}` + Enter/Space handlin
+g, or rely solely on the inner Browse/Generate buttons and make the div purely decorative. **Effort:** 20 min
 
 ### 🟠 Ax2 — Feedback modal lacks dialog semantics
 - **Where:** `components/FeedbackModal.tsx:18-71`
-- **Problem:** No `role="dialog"`/`aria-modal`, no focus trap, no Escape-to-close, no focus return. Keyboard/AT users can tab out behind it.
-- **Fix:** Add dialog roles, trap focus, close on Escape, and restore focus to the trigger on close (or adopt a headless dialog primitive). **Effort:** 25 min
+- **Problem:** No `role="dialog"`/`aria-modal`, no focus trap, no Escape-to-close, no focus return. Keyboard/A
+T users can tab out behind it.
+- **Fix:** Add dialog roles, trap focus, close on Escape, and restore focus to the trigger on close (or adopt
+a headless dialog primitive). **Effort:** 25 min
 
 ### 🟡 Ax3 — Quiz config inputs aren't programmatically labeled
-- **Where:** `components/QuizConfig.tsx:31-58` — the range input (`:35`) and `<select>` (`:50`) are labeled by sibling `<span>`s, not `<label htmlFor>`/`aria-label`.
+- **Where:** `components/QuizConfig.tsx:31-58` — the range input (`:35`) and `<select>` (`:50`) are labeled by
+ sibling `<span>`s, not `<label htmlFor>`/`aria-label`.
 - **Fix:** Use real `<label htmlFor>` or add `aria-label`. **Effort:** 10 min
 
-### 🟡 Ax4 — Heading hierarchy gaps
+### 🟡 Ax4 — Heading hierarchy g
 - **Fix:** Use `<h2>/<h3>` for section titles or mark spans with appropriate roles. **Effort:** 15 min
 
 ### 🟡 Ax5 — No `prefers-reduced-motion` support
 - **Where:** `app/globals.css` animations + `animate-pulse`/`animate-spin`/hero video.
-- **Fix:** Add a `@media (prefers-reduced-motion: reduce)` block that neutralizes animations. **Effort:** 15 min
+- **Fix:** Add a `@media (prefers-reduced-motion: reduce)` block that neutralizes animations. **Effort:** 15 m
+in
 
 ### 🟡 Ax6 — Missing visible focus states on most controls
-- **Where:** buttons/links across the app use `hover:` styling but no `focus-visible:` ring (inputs are the exception).
+- **Where:** buttons/links across the app use `hover:` styling but no `focus-visible:` ring (inputs are the ex
+ception).
 - **Fix:** Add a global `focus-visible` outline/ring utility. **Effort:** 15 min
 
 ---
@@ -243,13 +310,18 @@ Severity legend: 🔴 Critical · 🟠 Moderate · 🟡 Low. Effort estimates ar
 ## 6. SEO & Meta
 
 ### 🟠 S1 — Every client page shares the root title
-- **Where:** `app/login`, `app/register`, `app/upload`, `app/dashboard`, `app/history`, `app/history/[id]` are all `'use client'`, so none can `export const metadata`. They inherit `app/layout.tsx:9` → `<title>QuizForgeAI</title>`.
+- **Where:** `app/login`, `app/register`, `app/upload`, `app/dashboard`, `app/history`, `app/history/[id]` are
+ all `'use client'`, so none can `export const metadata`. They inherit `app/layout.tsx:9` → `<title>QuizForge
+AI</title>`.
 - **Problem:** No unique `<title>`/description per route — bad for tabs, bookmarks, and search.
-- **Fix:** Add server `layout.tsx` (or `page.tsx`) wrappers per route that export `metadata`, with the interactive UI as a child client component. (The landing page already does this correctly — `app/page.tsx:4`.) **Effort:** 30 min
+- **Fix:** Add server `layout.tsx` (or `page.tsx`) wrappers per route that export `metadata`, with the interac
+tive UI as a child client component. (The landing page already does this correctly — `app/page.tsx:4`.) **Effo
+rt:** 30 min
 
 ### 🟡 S2 — No Open Graph / Twitter / canonical / metadataBase
 - **Where:** `app/layout.tsx:9-13`
-- **Fix:** Add `metadataBase`, `openGraph`, and `twitter` blocks with an OG image so shared links render previews. **Effort:** 15 min
+- **Fix:** Add `metadataBase`, `openGraph`, and `twitter` blocks with an OG image so shared links render previ
+ews. **Effort:** 15 min
 
 ### 🟡 S3 — No robots.txt / sitemap
 - **Fix:** Add `app/robots.ts` and `app/sitemap.ts`. **Effort:** 15 min
@@ -258,50 +330,69 @@ Severity legend: 🔴 Critical · 🟠 Moderate · 🟡 Low. Effort estimates ar
 
 ## 7. Housekeeping
 
-### 🔴 H1 — A real database file is committed to the repo
-- **Where:** `prisma/dev.db` is **tracked** (despite `*.db` in `.gitignore:37` — it was committed before the ignore rule, so git still tracks it).
-- **Problem:** Two issues. (1) The schema is **PostgreSQL** (`prisma/schema.prisma:6`) so this SQLite file is stale and misleading. (2) A SQLite DB likely contains real user rows — emails and **bcrypt password hashes** — now sitting in git history and pushed to GitHub.
-- **Fix:** `git rm --cached prisma/dev.db` and commit; then **purge it from history** (`git filter-repo` or BFG) and force-push; rotate/notify if any real user data was exposed. Confirm `.gitignore` keeps it out going forward.
+### ✅ H1 — A real database file is committed to the repo (Fixed)
+- **Where:** `prisma/dev.db` is **tracked** (despite `*.db` in `.gitignore:37` — it was committed before the i
+gnore rule, so git still tracks it).
+- **Problem:** Two issues. (1) The schema is **PostgreSQL** (`prisma/schema.prisma:6`) so this SQLite file is
+stale and misleading. (2) A SQLite DB likely contains real user rows — emails and **bcrypt password hashes** —
+ now sitting in git history and pushed to GitHub.
+- **Fix:** `git rm --cached prisma/dev.db` and commit; then **purge it from history** (`git filter-repo` or BF
+G) and force-push; rotate/notify if any real user data was exposed. Confirm `.gitignore` keeps it out going fo
+rward.
 - **Effort:** 30 min
 
-### 🟠 H2 — Dead components
-- **Where:** `components/ImageCarousel.tsx` (58 lines, never imported anywhere) and `components/ThemeToggle.tsx` (29 lines, never imported — tied to U1).
+### ✅ H2 — Dead components (Fixed)
+- **Where:** `components/ImageCarousel.tsx` (58 lines, never imported anywhere) and `components/ThemeToggle.ts
+x` (29 lines, never imported — tied to U1).
 - **Fix:** Delete both. **Effort:** 5 min
 
-### 🟠 H3 — ~1.6 MB of unused image assets
-- **Where:** `public/carousel1.png … carousel6.png` (~1.2 MB total) and `public/logo.png` (402 KB) are referenced **nowhere** in the codebase. Separately, `app/icon.png` is **448 KB** — very large for a favicon.
+### ✅ H3 — ~1.6 MB of unused image assets (Fixed)
+- **Where:** `public/carousel1.png … carousel6.png` (~1.2 MB total) and `public/logo.png` (402 KB) are referen
+ced **nowhere** in the codebase. Separately, `app/icon.png` is **448 KB** — very large for a favicon.
 - **Fix:** Delete the carousel PNGs and `logo.png`; downsize `app/icon.png` to a few KB. **Effort:** 15 min
 
-### 🟡 H4 — `next-themes` dependency is effectively unused
+### ✅ H4 — `next-themes` dependency is effectively unused (Fixed)
 - **Where:** `package.json:21` — only consumed by the dead theming (U1).
 - **Fix:** Remove with the U1 decision. **Effort:** 5 min
 
-### 🟡 H5 — README documents unsupported features
-- **Where:** `README.md` claims PPT/PPTX and "plain text" support, but `lib/document-parser.ts:70` throws for PPT/PPTX and `.txt` isn't handled.
-- **Fix:** Update README to match actual supported formats (PDF/DOCX). **Effort:** 5 min
-
+### ✅ H5 — README documents unsupported features (Fixed)
+- **Where:** `README.md` claims PPT/PPTX and "plain text" support, but `lib/document-parser.ts:70` throws for
+PPT/PPTX and `.txt` isn't handle
 ### 🟡 H6 — `require('webpack')` without declaring webpack
-- **Where:** `next.config.js:1` — `webpack` is not in `package.json`. It works only because Next bundles its own copy.
-- **Fix:** Either add `webpack` as a devDependency or use the `webpack` instance Next passes into the config callback. **Effort:** 5 min
+- **Where:** `next.config.js:1` — `webpack` is not in `package.json`. It works only because Next bundles its o
+wn copy.
+- **Fix:** Either add `webpack` as a devDependency or use the `webpack` instance Next passes into the config c
+allback. **Effort:** 5 min
 
-### 🟡 H7 — `.eslintrc.json` is untracked and unmet
+### ✅ H7 — `.eslintrc.json` is untracked and unmet (Fixed)
 - **Where:** git status shows `?? .eslintrc.json`; the project doesn't pass it (C2).
-- **Fix:** Commit it together with lint fixes. **Effort:** 2 min
-
+- **Fix:** Commit it together wi
 ---
 
 ## ✅ Already Excellent
 
-- **Security on sensitive routes is genuinely thoughtful.** Per-route rate limiting with sensible windows and a self-cleaning map (`lib/rate-limit.ts`, applied in `analyze-document`, `generate-questions`, `register`); ownership checks on history GET/DELETE (`app/api/history/[id]/route.ts:31,83`); bcrypt hashing + an 8-char minimum (`app/api/register/route.ts:28,46`); and login returns a generic "Invalid email or password" with no user enumeration (`lib/auth.ts`).
+- **Security on sensitive routes is genuinely thoughtful.** Per-route rate limiting with sensible windows and
+a self-cleaning map (`lib/rate-limit.ts`, applied in `analyze-document`, `generate-questions`, `register`); ow
+nership checks on history GET/DELETE (`app/api/history/[id]/route.ts:31,83`); bcrypt hashing + an 8-char minim
+um (`app/api/register/route.ts:28,46`); and login returns a generic "Invalid email or password" with no user e
+numeration (`lib/auth.ts`).
 - **Prisma singleton** done correctly to survive dev hot-reload (`lib/prisma.ts`).
-- **Resilient Gemini integration:** model fallback chain, markdown-fence stripping, a retry with a simplified prompt, and exponential backoff in the route (`lib/gemini.ts`, `generate-questions/route.ts:69-81`).
-- **User-friendly error mapping:** corrupt-PDF detection surfaces a clear message and a 400 instead of a 500 (`document-parser.ts:24`, `analyze-document/route.ts:66`).
-- **Build-correctness already handled:** `force-dynamic` on DB routes and `<Suspense>` around `useSearchParams` (`app/upload/page.tsx:148`).
-- **`prisma` in `dependencies` is correct here** (not a misplaced dep) — the `postinstall: prisma generate` script needs the CLI present during Vercel's install.
-- **Strong UX states throughout:** loading, empty, and error states are designed for in history, dashboard, upload, and quiz flows.
-- **No zoom-blocking viewport** and **icon-only buttons carry `aria-label`s** (clear/generate/delete/sign-out) — good a11y baseline to build on.
-- **Hydration-safe pattern** in `ThemeToggle` (`mounted` guard) — a good pattern, just attached to an unused feature.
-- **Cohesive "liquid-glass" design language** applied consistently; secrets kept out of git with a clear `.env.example`.
+- **Resilient Gemini integration:** model fallback chain, markdown-fence stripping, a retry with a simplified
+prompt, and exponential backoff in the route (`lib/gemini.ts`, `generate-questions/route.ts:69-81`).
+- **User-friendly error mapping:** corrupt-PDF detection surfaces a clear message and a 400 instead of a 500 (
+`document-parser.ts:24`, `analyze-document/route.ts:66`).
+- **Build-correctness already handled:** `force-dynamic` on DB routes and `<Suspense>` around `useSearchParams
+` (`app/upload/page.tsx:148`).
+- **`prisma` in `dependencies` is correct here** (not a misplaced dep) — the `postinstall: prisma generate` sc
+ript needs the CLI present during Vercel's install.
+- **Strong UX states throughout:** loading, empty, and error states are designed for in history, dashboard, up
+load, and quiz flows.
+- **No zoom-blocking viewport** and **icon-only buttons carry `aria-label`s** (clear/generate/delete/sign-out)
+ — good a11y baseline to build on.
+- **Hydration-safe pattern** in `ThemeToggle` (`mounted` guard) — a good pattern, just attached to an unused f
+eature.
+- **Cohesive "liquid-glass" design language** applied consistently; secrets kept out of git with a clear `.env
+.example`.
 
 ---
 
@@ -315,7 +406,8 @@ Severity legend: 🔴 Critical · 🟠 Moderate · 🟡 Low. Effort estimates ar
 
 **Phase 2 — Correctness (≈1.5 hr):**
 5. **C4** — fix the double-timer / duplicate `/api/save-quiz` save, then **C8**.
-6. **C1** — add the `next-auth` type augmentation, delete all `@ts-ignore`s; then **C2/H7** — commit `.eslintrc.json` with lint at zero (resolve remaining **C6**).
+6. **C1** — add the `next-auth` type augmentation, delete all `@ts-ignore`s; then **C2/H7** — commit `.eslintr
+c.json` with lint at zero (resolve remaining **C6**).
 7. **C7** — validate Gemini output.
 
 **Phase 3 — Structure & polish (as time allows):**

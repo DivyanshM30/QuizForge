@@ -83,6 +83,32 @@ export function generateRevisionSuggestions(
   return suggestions;
 }
 
+/** Bar fill colour (hex) for a percentage — for recharts <Cell fill>. */
+export function barColorForPct(pct: number): string {
+  return pct >= 80 ? '#4ade80' : pct >= 60 ? '#facc15' : '#f87171';
+}
+
+/** Tailwind text-colour class for an accuracy/score percentage. */
+export function accuracyTextClass(pct: number): string {
+  return pct >= 80 ? 'text-green-400' : pct >= 60 ? 'text-yellow-400' : 'text-red-400';
+}
+
+/**
+ * Rehydrate a stored QuizResult row: the JSON-string columns are parsed back
+ * into objects for the frontend. Shared by both history API routes.
+ */
+export function deserializeQuizResult(row: any) {
+  return {
+    ...row,
+    config: JSON.parse(row.config),
+    topicPerformance: JSON.parse(row.topicPerformance),
+    weakTopics: JSON.parse(row.weakTopics),
+    revisionSuggestions: JSON.parse(row.revisionSuggestions),
+    questions: JSON.parse(row.questions),
+    userAnswers: JSON.parse(row.userAnswers),
+  };
+}
+
 export function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
