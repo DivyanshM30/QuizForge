@@ -5,13 +5,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/* App is dark-only. Single source of truth for the shell colors. */
 :root {
-  --foreground-rgb: 30, 27, 75; /* Indigo 950 */
-  --background-start-rgb: 248, 250, 252; /* Slate 50 */
-  --background-end-rgb: 238, 242, 255; /* Indigo 50 */
-}
-
-.dark {
   --foreground-rgb: 241, 245, 249; /* Slate 100 */
   --background-start-rgb: 9, 9, 11; /* Zinc 950 */
   --background-end-rgb: 15, 23, 42; /* Slate 900 */
@@ -47,15 +42,10 @@ h1, h2, h3, h4, h5, h6 {
 @layer utilities {
   .bg-grid {
     background-image:
-      linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
-    background-size: 48px 48px;
-    background-position: center;
-  }
-  .dark .bg-grid {
-    background-image:
       linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-position: center;
   }
 }
 

@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body className={`${firaCode.variable} ${firaSans.variable} font-sans bg-black text-slate-100`}>
         <Providers>
           {children}
