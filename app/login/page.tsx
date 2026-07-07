@@ -48,8 +48,7 @@ export default function LoginPage() {
           {/* Heading */}
           <div className="text-center space-y-1">
             <h1
-              className="text-4xl text-white tracking-tight"
-              style={{ fontFamily: "'Instrument Serif', serif" }}
+              className="font-display text-4xl text-white tracking-tight"
             >
               Welcome back
             </h1>
@@ -84,7 +83,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-white/25 text-sm outline-none focus:border-white/30 focus:bg-white/8 transition-all"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-white/40 text-sm outline-none focus:border-white/30 focus:bg-white/10 transition-all"
                   />
                 </div>
               </div>
@@ -104,7 +103,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-white/25 text-sm outline-none focus:border-white/30 transition-all"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-white/40 text-sm outline-none focus:border-white/30 transition-all"
                   />
                 </div>
               </div>

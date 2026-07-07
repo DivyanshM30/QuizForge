@@ -33,7 +33,7 @@ function StepBadge({ current, step }: { current: Step; step: Step }) {
   return (
     <span
       className={`text-xs font-medium tracking-widest transition-colors ${
-        active ? 'text-white' : done ? 'text-white/40 line-through' : 'text-white/20'
+        active ? 'text-white' : done ? 'text-white/40 line-through' : 'text-white/40'
       }`}
     >
       {STEP_LABELS[step]}
@@ -228,8 +228,7 @@ export default function UploadPage() {
           <div className="fade-in space-y-6">
             <div className="text-center space-y-2 mb-8">
               <h1
-                className="text-4xl md:text-5xl text-white tracking-tight"
-                style={{ fontFamily: "'Instrument Serif', serif" }}
+                className="font-display text-4xl md:text-5xl text-white tracking-tight"
               >
                 Upload your material
               </h1>
@@ -249,8 +248,7 @@ export default function UploadPage() {
           <div className="fade-in">
             <div className="text-center space-y-2 mb-8">
               <h1
-                className="text-4xl md:text-5xl text-white tracking-tight"
-                style={{ fontFamily: "'Instrument Serif', serif" }}
+                className="font-display text-4xl md:text-5xl text-white tracking-tight"
               >
                 Configure your quiz
               </h1>

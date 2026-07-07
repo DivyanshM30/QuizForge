@@ -7,6 +7,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        display: ["'Instrument Serif'", 'serif'],
+      },
       colors: {
         primary: {
           50: '#eef2ff',

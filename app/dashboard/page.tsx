@@ -172,10 +172,7 @@ export default function DashboardPage() {
         {/* ── Page Header ── */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 animate-fade-in">
           <div className="space-y-1">
-            <h1
-              className="text-4xl md:text-5xl text-white tracking-tight"
-              style={{ fontFamily: "'Instrument Serif', serif" }}
-            >
+            <h1 className="font-display text-4xl md:text-5xl text-white tracking-tight">
               Dashboard
             </h1>
             <p className="text-white/40 text-sm">
@@ -236,18 +233,27 @@ export default function DashboardPage() {
         <div className="animate-fade-in" style={{ animationDelay: '250ms' }}>
           <div className="flex items-center gap-2 mb-3">
             <Sparkles size={14} className="text-white/40" />
-            <span className="text-white/40 text-xs font-medium uppercase tracking-widest">
+            <h2 className="text-white/40 text-xs font-medium uppercase tracking-widest">
               Start a New Quiz
-            </span>
+            </h2>
           </div>
           <div
             className={`liquid-glass rounded-2xl pl-5 pr-2 py-3 flex items-center gap-3 transition-all duration-200 cursor-pointer ${
               isDragging ? 'ring-1 ring-white/30 bg-white/5' : 'hover:bg-white/[0.03]'
             } ${uploadState === 'error' ? 'ring-1 ring-red-500/40' : ''}`}
+            role="button"
+            tabIndex={0}
+            aria-label="Upload study material — PDF or DOCX"
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
             onClick={() => !isBusy && fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && !isBusy) {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
           >
             {isBusy ? (
               <Loader2 size={18} className="text-white/50 flex-shrink-0 animate-spin" />
@@ -305,9 +311,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Clock size={14} className="text-white/40" />
-              <span className="text-white/40 text-xs font-medium uppercase tracking-widest">
+              <h2 className="text-white/40 text-xs font-medium uppercase tracking-widest">
                 Recent Quizzes
-              </span>
+              </h2>
             </div>
             {history.length > 5 && (
               <Link
@@ -345,12 +351,12 @@ export default function DashboardPage() {
                         <span className="text-white/50 text-sm">
                           {quiz.score}/{quiz.totalQuestions} correct
                         </span>
-                        <span className="text-white/20 text-xs">•</span>
+                        <span className="text-white/40 text-xs">•</span>
                         <span className="text-white/30 text-sm tabular-nums">
                           {formatTime(quiz.timeTaken)}
                         </span>
                       </div>
-                      <p className="text-white/20 text-xs tabular-nums">
+                      <p className="text-white/55 text-xs tabular-nums">
                         {new Date(quiz.createdAt || quiz.timestamp || Date.now()).toLocaleDateString(undefined, {
                           month: 'short', day: 'numeric', year: 'numeric',
                         })}

@@ -32,10 +32,11 @@ export default function QuizConfig({ onStart, isGenerating = false }: QuizConfig
         {/* Questions slider */}
         <div className="space-y-3">
           <div className="flex justify-between items-baseline">
-            <span className="text-white/60 text-xs font-medium uppercase tracking-widest">Questions</span>
+            <label htmlFor="num-questions" className="text-white/60 text-xs font-medium uppercase tracking-widest">Questions</label>
             <span className="text-white text-2xl font-semibold tabular-nums">{numQuestions}</span>
           </div>
           <input
+            id="num-questions"
             type="range" min={QUIZ_LIMITS.MIN_QUESTIONS} max={QUIZ_LIMITS.MAX_QUESTIONS} value={numQuestions}
             onChange={(e) => setNumQuestions(Number(e.target.value))}
             className="w-full h-1 rounded-full appearance-none cursor-pointer"
@@ -50,8 +51,9 @@ export default function QuizConfig({ onStart, isGenerating = false }: QuizConfig
 
         {/* Time limit */}
         <div className="space-y-3">
-          <span className="text-white/60 text-xs font-medium uppercase tracking-widest block">Time Limit</span>
+          <label htmlFor="time-limit" className="text-white/60 text-xs font-medium uppercase tracking-widest block">Time Limit</label>
           <select
+            id="time-limit"
             value={timeLimit}
             onChange={(e) => setTimeLimit(Number(e.target.value))}
             className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 text-sm
@@ -65,8 +67,8 @@ export default function QuizConfig({ onStart, isGenerating = false }: QuizConfig
 
         {/* Difficulty */}
         <div className="space-y-3">
-          <span className="text-white/60 text-xs font-medium uppercase tracking-widest block">Difficulty</span>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <span id="difficulty-label" className="text-white/60 text-xs font-medium uppercase tracking-widest block">Difficulty</span>
+          <div role="group" aria-labelledby="difficulty-label" className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {DIFFICULTIES.map((level) => (
               <button
                 key={level}

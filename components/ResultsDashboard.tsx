@@ -41,11 +41,11 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
 
       {/* Score summary */}
       <div className="liquid-glass rounded-3xl p-8">
-        <p className="text-white/40 text-xs font-medium uppercase tracking-widest text-center mb-6">Results</p>
+        <h2 className="text-white/40 text-xs font-medium uppercase tracking-widest text-center mb-6">Results</h2>
         <div className="flex flex-wrap justify-center gap-10">
           <div className="text-center">
             <div className={`text-5xl font-bold tabular-nums ${scoreColor}`}>
-              {result.score}<span className="text-white/20 text-3xl">/{result.totalQuestions}</span>
+              {result.score}<span className="text-white/55 text-3xl">/{result.totalQuestions}</span>
             </div>
             <div className="text-white/40 text-xs uppercase tracking-widest mt-2">Score</div>
           </div>
@@ -63,7 +63,7 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
       {/* Topic chart */}
       {chartData.length > 0 && (
         <div className="liquid-glass rounded-3xl p-6 space-y-4">
-          <p className="text-white/40 text-xs font-medium uppercase tracking-widest">Topic Performance</p>
+          <h3 className="text-white/40 text-xs font-medium uppercase tracking-widest">Topic Performance</h3>
           <ResultsTopicChart chartData={chartData} />
         </div>
       )}
@@ -72,7 +72,7 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
       <div className="grid md:grid-cols-2 gap-5">
         {result.weakTopics.length > 0 && (
           <div className="liquid-glass rounded-3xl p-6 space-y-3">
-            <p className="text-white/40 text-xs font-medium uppercase tracking-widest">Topics to Review</p>
+            <h3 className="text-white/40 text-xs font-medium uppercase tracking-widest">Topics to Review</h3>
             <ul className="space-y-2">
               {result.weakTopics.map((topic, i) => (
                 <li key={i} className="flex items-start gap-2 text-white/70 text-sm">
@@ -84,7 +84,7 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
           </div>
         )}
         <div className="liquid-glass rounded-3xl p-6 space-y-3">
-          <p className="text-white/40 text-xs font-medium uppercase tracking-widest">Revision Suggestions</p>
+          <h3 className="text-white/40 text-xs font-medium uppercase tracking-widest">Revision Suggestions</h3>
           <ul className="space-y-2">
             {result.revisionSuggestions.map((s, i) => (
               <li key={i} className="text-white/60 text-sm leading-relaxed">{s}</li>

@@ -4,6 +4,7 @@ import { validateFile } from '@/lib/file-validation';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { getErrorMessage } from '@/lib/quiz-utils';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -57,9 +58,9 @@ export async function POST(request: NextRequest) {
       wordCount: parsed.wordCount,
       pageCount: parsed.pageCount,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error analyzing document:', error);
-    const message = error?.message || 'Failed to analyze document';
+    const message = getErrorMessage(error, 'Failed to analyze document');
 
     // Treat parsing/structure issues as a 400 (client input problem), not a 500
     const isBadPdf =

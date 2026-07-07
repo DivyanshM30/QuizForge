@@ -1,8 +1,6 @@
-const webpack = require('webpack');
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
     // Exclude Node.js modules from client bundle
     if (!isServer) {
       config.resolve.fallback = {

@@ -122,7 +122,7 @@ export default function DashboardCharts({ performanceData, topicAggregated }: Da
                   color: 'white',
                   fontSize: 12,
                 }}
-                formatter={(value: number, _: any, props: any) => [
+                formatter={(value, _name, props) => [
                   `${value}%  (${props.payload.correct}/${props.payload.total})`,
                   props.payload.fullTopic,
                 ]}

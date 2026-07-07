@@ -23,7 +23,7 @@ export default function ResultsTopicChart({ chartData }: { chartData: ChartDatum
         <Tooltip
           cursor={{ fill: 'rgba(255,255,255,0.04)' }}
           contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', fontSize: 12 }}
-          formatter={(value: number, _: any, props: any) => [`${value}%`, props.payload.fullTopic]}
+          formatter={(value, _name, props) => [`${value}%`, props.payload.fullTopic]}
         />
         <Bar dataKey="percentage" radius={[6, 6, 0, 0]}>
           {chartData.map((entry, i) => (

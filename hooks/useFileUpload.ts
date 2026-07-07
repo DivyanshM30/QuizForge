@@ -65,8 +65,8 @@ export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
         const data = await res.json();
         setDocumentText(data.text);
         router.push('/upload?step=config');
-      } catch (err: any) {
-        setUploadError(err.message || 'Upload failed');
+      } catch (err) {
+        setUploadError(err instanceof Error ? err.message : 'Upload failed');
         setUploadState('error');
       }
     },
