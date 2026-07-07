@@ -222,10 +222,7 @@ export default function HeroSection() {
       <section className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12 text-center -translate-y-[20%]">
 
         {/* Heading */}
-        <h1
-          className="text-5xl md:text-6xl lg:text-7xl text-white mb-8 tracking-tight whitespace-nowrap"
-          style={{ fontFamily: "'Instrument Serif', serif" }}
-        >
+        <h1 className="font-display text-4xl md:text-6xl lg:text-7xl text-white mb-8 tracking-tight md:whitespace-nowrap">
           Study smarter, not harder
         </h1>
 
@@ -237,10 +234,19 @@ export default function HeroSection() {
             className={`liquid-glass rounded-full pl-5 pr-2 py-2 flex items-center gap-3 transition-all duration-200 cursor-pointer ${
               isDragging ? 'ring-1 ring-white/30 bg-white/5' : 'hover:bg-white/[0.03]'
             } ${uploadState === 'error' ? 'ring-1 ring-red-500/40' : ''}`}
+            role="button"
+            tabIndex={0}
+            aria-label="Upload study material — PDF or DOCX"
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
             onClick={() => !isBusy && fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && !isBusy) {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
           >
             {isBusy ? (
               <Loader2 size={18} className="text-white/50 flex-shrink-0 animate-spin" />

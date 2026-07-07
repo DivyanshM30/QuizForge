@@ -82,8 +82,7 @@ export default function LandingSections() {
         <div className="relative text-center mb-16 space-y-3">
           <SectionLabel>Features</SectionLabel>
           <h2
-            className="text-4xl md:text-5xl text-white tracking-tight"
-            style={{ fontFamily: "'Instrument Serif', serif" }}
+            className="font-display text-4xl md:text-5xl text-white tracking-tight"
           >
             Everything you need to<br className="hidden md:block" /> study smarter
           </h2>
@@ -112,8 +111,7 @@ export default function LandingSections() {
         <div className="text-center mb-16 space-y-3">
           <SectionLabel>How it works</SectionLabel>
           <h2
-            className="text-4xl md:text-5xl text-white tracking-tight"
-            style={{ fontFamily: "'Instrument Serif', serif" }}
+            className="font-display text-4xl md:text-5xl text-white tracking-tight"
           >
             From upload to insight<br className="hidden md:block" /> in four steps
           </h2>
@@ -123,8 +121,7 @@ export default function LandingSections() {
           {steps.map(({ num, title, body }) => (
             <div key={num} className="liquid-glass-card rounded-2xl p-7 flex gap-5 hover:bg-white/[0.03] transition-colors">
               <span
-                className="text-5xl font-bold text-white/8 leading-none flex-shrink-0 tabular-nums select-none"
-                style={{ fontFamily: "'Instrument Serif', serif" }}
+                className="font-display text-5xl font-bold text-white leading-none flex-shrink-0 tabular-nums select-none"
               >
                 {num}
               </span>
@@ -153,8 +150,7 @@ export default function LandingSections() {
         <div className="space-y-3">
           <SectionLabel>About</SectionLabel>
           <h2
-            className="text-4xl md:text-5xl text-white tracking-tight"
-            style={{ fontFamily: "'Instrument Serif', serif" }}
+            className="font-display text-4xl md:text-5xl text-white tracking-tight"
           >
             Built by a student,<br className="hidden md:block" /> for students
           </h2>
@@ -201,13 +197,13 @@ export default function LandingSections() {
 
       {/* ── Footer ───────────────────────────────────────────── */}
       <footer className="border-t border-white/[0.06] px-6 py-8">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-white/25 text-xs">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-white/55 text-xs">
           <span>© {new Date().getFullYear()} QuizForge · All rights reserved</span>
           <div className="flex items-center gap-6">
-            <Link href="#features" className="hover:text-white/50 transition-colors">Features</Link>
-            <Link href="#how-it-works" className="hover:text-white/50 transition-colors">How it works</Link>
-            <Link href="#about" className="hover:text-white/50 transition-colors">About</Link>
-            <Link href="/login" className="hover:text-white/50 transition-colors">Sign in</Link>
+            <Link href="#features" className="hover:text-white transition-colors">Features</Link>
+            <Link href="#how-it-works" className="hover:text-white transition-colors">How it works</Link>
+            <Link href="#about" className="hover:text-white transition-colors">About</Link>
+            <Link href="/login" className="hover:text-white transition-colors">Sign in</Link>
           </div>
         </div>
       </footer>

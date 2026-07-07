@@ -76,7 +76,7 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-1">
           <span className="text-white/50 text-sm font-medium tabular-nums whitespace-nowrap">
-            {currentIndex + 1} <span className="text-white/25">/ {totalQuestions}</span>
+            {currentIndex + 1} <span className="text-white/55">/ {totalQuestions}</span>
           </span>
           <div className="flex-1 h-px bg-white/10 rounded-full overflow-hidden">
             <div

@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { QUIZ_LIMITS } from '@/lib/constants';
+import { getErrorMessage } from '@/lib/quiz-utils';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
       try {
         questions = await generateQuestions(documentText, quizConfig);
         break;
-      } catch (error: any) {
+      } catch (error) {
         attempts++;
         if (attempts >= maxAttempts) {
           throw error;
@@ -91,12 +92,15 @@ export async function POST(request: NextRequest) {
       questions,
       count: questions.length,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error generating questions:', error);
     return NextResponse.json(
       {
-        error: error.message || 'Failed to generate questions',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        error: getErrorMessage(error, 'Failed to generate questions'),
+        details:
+          process.env.NODE_ENV === 'development' && error instanceof Error
+            ? error.stack
+            : undefined,
       },
       { status: 500 }
     );

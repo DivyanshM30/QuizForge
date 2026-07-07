@@ -74,8 +74,7 @@ export default function QuizDetailPage() {
 
         <div className="space-y-1">
           <h1
-            className="text-4xl text-white tracking-tight"
-            style={{ fontFamily: "'Instrument Serif', serif" }}
+            className="font-display text-4xl text-white tracking-tight"
           >
             Quiz Results
           </h1>

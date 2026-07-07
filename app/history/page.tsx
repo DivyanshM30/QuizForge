@@ -26,8 +26,7 @@ export default function HistoryPage() {
       <main className="relative z-10 flex-1 max-w-5xl mx-auto w-full px-4 py-8 md:px-6 md:py-10">
         <div className="mb-8 text-center space-y-1">
           <h1
-            className="text-4xl md:text-5xl text-white tracking-tight"
-            style={{ fontFamily: "'Instrument Serif', serif" }}
+            className="font-display text-4xl md:text-5xl text-white tracking-tight"
           >
             Your quiz history
           </h1>

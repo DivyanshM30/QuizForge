@@ -1,4 +1,5 @@
 import { Question, QuizResult, TopicPerformance, QuizConfig } from './types';
+import type { QuizResult as QuizResultRow } from '@prisma/client';
 
 export function calculateScore(
   questions: Question[],
@@ -83,6 +84,11 @@ export function generateRevisionSuggestions(
   return suggestions;
 }
 
+/** Narrow an unknown (e.g. a catch variable) to a human-readable message. */
+export function getErrorMessage(err: unknown, fallback = 'Something went wrong'): string {
+  return err instanceof Error ? err.message : typeof err === 'string' ? err : fallback;
+}
+
 /** Bar fill colour (hex) for a percentage — for recharts <Cell fill>. */
 export function barColorForPct(pct: number): string {
   return pct >= 80 ? '#4ade80' : pct >= 60 ? '#facc15' : '#f87171';
@@ -97,7 +103,7 @@ export function accuracyTextClass(pct: number): string {
  * Rehydrate a stored QuizResult row: the JSON-string columns are parsed back
  * into objects for the frontend. Shared by both history API routes.
  */
-export function deserializeQuizResult(row: any) {
+export function deserializeQuizResult(row: QuizResultRow) {
   return {
     ...row,
     config: JSON.parse(row.config),

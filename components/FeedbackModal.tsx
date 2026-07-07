@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { Question } from '@/lib/types';
 
 interface FeedbackModalProps {
@@ -10,6 +11,32 @@ interface FeedbackModalProps {
 }
 
 export default function FeedbackModal({ question, userAnswer, isOpen, onContinue }: FeedbackModalProps) {
+  const continueRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
+  /* Dialog behaviour: focus the action on open, trap Tab (single focusable
+     control), close on Escape, and restore focus to the trigger on close. */
+  useEffect(() => {
+    if (!isOpen) return;
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    continueRef.current?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onContinue();
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        continueRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previouslyFocused.current?.focus();
+    };
+  }, [isOpen, onContinue]);
+
   if (!isOpen) return null;
 
   const isCorrect = userAnswer === question.correctAnswer;
@@ -17,7 +44,12 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-      <div className="liquid-glass rounded-3xl p-7 max-w-lg w-full space-y-5 animate-in fade-in zoom-in duration-200">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feedback-title"
+        className="liquid-glass rounded-3xl p-7 max-w-lg w-full space-y-5 animate-in fade-in zoom-in duration-200"
+      >
 
         {/* Result header */}
         <div className="flex items-center gap-4">
@@ -35,7 +67,7 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
             )}
           </div>
           <div>
-            <h3 className={`text-xl font-semibold ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+            <h3 id="feedback-title" className={`text-xl font-semibold ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
               {isCorrect ? 'Correct!' : 'Incorrect'}
             </h3>
             <p className="text-white/40 text-sm">
@@ -61,6 +93,7 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
         )}
 
         <button
+          ref={continueRef}
           onClick={onContinue}
           className="w-full bg-white text-black font-semibold py-3.5 rounded-xl
             hover:bg-white/90 transition-colors cursor-pointer"

@@ -41,8 +41,8 @@ export default function FileUpload({ onFileUploaded, onAnalysisComplete, isAnaly
       const data = await response.json();
       onFileUploaded(file);
       onAnalysisComplete(data.text);
-    } catch (err: any) {
-      setError(err.message || 'Failed to upload file');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload file');
       setFileName(null);
     } finally {
       setUploading(false);

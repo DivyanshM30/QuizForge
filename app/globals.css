@@ -39,6 +39,32 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Fira Code', monospace;
 }
 
+/* ─── Accessibility ────────────────────────────── */
+/* Visible keyboard focus everywhere (mouse focus stays clean). */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role='button']:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 @layer utilities {
   .bg-grid {
     background-image:
@@ -217,5 +243,5 @@ h1, h2, h3, h4, h5, h6 {
   border-color: rgba(255, 255, 255, 0.3);
 }
 .dark-input::placeholder {
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.4);
 }

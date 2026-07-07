@@ -44,3 +44,4 @@ prisma/dev.db
 audit.md
 audit.html
 redesign_prompt.md
+.fuse_hidden*

@@ -91,7 +91,7 @@ export default function QuizHistory() {
             </button>
             <Link
               href={`/history/${quiz.id}`}
-              className="flex items-center gap-1.5 bg-white/8 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 font-medium px-4 py-2 rounded-xl transition-all text-sm cursor-pointer"
+              className="flex items-center gap-1.5 bg-white/10 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 font-medium px-4 py-2 rounded-xl transition-all text-sm cursor-pointer"
             >
               Details <ChevronRight size={14} />
             </Link>

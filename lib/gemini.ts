@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Question, QuizConfig } from './types';
+import { getErrorMessage } from './quiz-utils';
 
 function getGenAI() {
   const API_KEY = process.env.GEMINI_API_KEY;
@@ -179,16 +180,17 @@ IMPORTANT:
     }
 
     return validatedQuestions.slice(0, config.numQuestions);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error generating questions:', error);
-    
+
     // Retry once with a simpler prompt
-    if (error.message?.includes('JSON') || error.message?.includes('parse')) {
+    const message = getErrorMessage(error);
+    if (message.includes('JSON') || message.includes('parse')) {
       console.log('Retrying with simplified prompt...');
       return generateQuestionsSimple(documentText, config);
     }
-    
-    throw new Error(`Failed to generate questions: ${error.message}`);
+
+    throw new Error(`Failed to generate questions: ${message}`);
   }
 }
 
