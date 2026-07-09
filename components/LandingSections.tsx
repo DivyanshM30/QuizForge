@@ -63,7 +63,7 @@ const steps = [
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <span className="inline-block text-white/40 text-xs font-medium uppercase tracking-[0.2em] mb-4">
+    <span className="inline-block text-white/55 text-xs font-medium uppercase tracking-[0.2em] mb-4">
       {children}
     </span>
   );
@@ -86,7 +86,7 @@ export default function LandingSections() {
           >
             Everything you need to<br className="hidden md:block" /> study smarter
           </h2>
-          <p className="text-white/40 max-w-xl mx-auto text-sm leading-relaxed">
+          <p className="text-white/55 max-w-xl mx-auto text-sm leading-relaxed">
             Upload once, quiz endlessly. QuizForge handles the hard part so you can focus on learning.
           </p>
         </div>
@@ -98,7 +98,7 @@ export default function LandingSections() {
                 {icon}
               </div>
               <h3 className="text-white font-semibold text-base">{title}</h3>
-              <p className="text-white/45 text-sm leading-relaxed">{body}</p>
+              <p className="text-white/55 text-sm leading-relaxed">{body}</p>
             </div>
           ))}
         </div>
@@ -127,7 +127,7 @@ export default function LandingSections() {
               </span>
               <div className="space-y-1.5 pt-1">
                 <h3 className="text-white font-semibold">{title}</h3>
-                <p className="text-white/45 text-sm leading-relaxed">{body}</p>
+                <p className="text-white/55 text-sm leading-relaxed">{body}</p>
               </div>
             </div>
           ))}
@@ -156,14 +156,14 @@ export default function LandingSections() {
           </h2>
         </div>
 
-        <p className="text-white/50 text-base leading-relaxed max-w-2xl mx-auto">
+        <p className="text-white/60 text-base leading-relaxed max-w-2xl mx-auto">
           QuizForge started as a personal frustration — spending more time making flashcards than actually studying.
           The idea was simple: paste your notes, get an instant exam. Now it&apos;s a full platform that reads your documents,
           understands the material, and generates exam-quality MCQs with explanations and analytics — so revision
           becomes active, not passive.
         </p>
 
-        <p className="text-white/35 text-sm leading-relaxed">
+        <p className="text-white/55 text-sm leading-relaxed">
           Powered by <span className="text-white/60">Google Gemini AI</span> · Built with{' '}
           <span className="text-white/60">Next.js 14</span> ·{' '}
           <span className="text-white/60">TypeScript</span> ·{' '}
