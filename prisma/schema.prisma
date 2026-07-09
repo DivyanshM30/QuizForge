@@ -11,15 +11,44 @@ model User {
   id        String   @id @default(cuid())
   name      String?
   email     String   @unique
-  password  String
+  password  String?  // null for OAuth-only accounts
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   results   QuizResult[]
+  documents Document[]
+  resetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  text      String
+  wordCount Int
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  results   QuizResult[]
+
+  @@index([userId])
 }
 
 model QuizResult {
   id              String   @id @default(cuid())
   userId          String
+  documentId      String?
   score           Int
   totalQuestions  Int
   accuracy        Float
@@ -34,4 +63,5 @@ model QuizResult {
   createdAt       DateTime @default(now())
   
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document        Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
 }

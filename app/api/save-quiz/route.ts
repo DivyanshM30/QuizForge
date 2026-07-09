@@ -27,14 +27,26 @@ export async function POST(req: Request) {
       weakTopics, 
       revisionSuggestions,
       questions,
-      userAnswers 
+      userAnswers,
+      documentId,
     } = await req.json()
 
     const userId = session.user.id
 
+    // Only link a document the user actually owns.
+    let linkedDocumentId: string | null = null;
+    if (documentId && typeof documentId === 'string') {
+      const doc = await prisma.document.findFirst({
+        where: { id: documentId, userId },
+        select: { id: true },
+      });
+      linkedDocumentId = doc?.id ?? null;
+    }
+
     const result = await prisma.quizResult.create({
       data: {
         userId,
+        documentId: linkedDocumentId,
         score,
         totalQuestions,
         accuracy,

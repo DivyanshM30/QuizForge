@@ -7,13 +7,23 @@ import ResultsDashboard from '@/components/ResultsDashboard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import AppNav from '@/components/AppNav';
 import Link from 'next/link';
-import { ChevronLeft, Zap } from 'lucide-react';
+import { ChevronLeft, Zap, RotateCcw } from 'lucide-react';
+import { useQuizStore } from '@/store/quiz-store';
+import { shuffleQuestions } from '@/lib/quiz-utils';
 
 export default function QuizDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [result, setResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const { startQuiz } = useQuizStore();
+
+  /* Retake: same questions, freshly shuffled (order + option positions). */
+  const handleRetake = () => {
+    if (!result) return;
+    startQuiz(shuffleQuestions(result.questions), result.config);
+    router.push('/upload?step=quiz');
+  };
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -72,13 +82,22 @@ export default function QuizDetailPage() {
           Back to History
         </Link>
 
-        <div className="space-y-1">
-          <h1
-            className="font-display text-4xl text-white tracking-tight"
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div className="space-y-1">
+            <h1
+              className="font-display text-4xl text-white tracking-tight"
+            >
+              Quiz Results
+            </h1>
+            <p className="text-white/40 text-sm">Detailed breakdown of your attempt</p>
+          </div>
+          <button
+            onClick={handleRetake}
+            className="flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm cursor-pointer self-start sm:self-auto"
           >
-            Quiz Results
-          </h1>
-          <p className="text-white/40 text-sm">Detailed breakdown of your attempt</p>
+            <RotateCcw size={15} />
+            Retake Quiz
+          </button>
         </div>
 
         <ResultsDashboard result={result} onRetake={() => router.push('/upload')} />

@@ -4,6 +4,7 @@ import { validateFile } from '@/lib/file-validation';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { prisma } from '@/lib/prisma';
 import { getErrorMessage } from '@/lib/quiz-utils';
 
 export const runtime = 'nodejs';
@@ -52,8 +53,40 @@ export async function POST(request: NextRequest) {
     // Parse document
     const parsed = await parseDocument(file);
 
+    // Persist to the user's document library (keep the 20 most recent).
+    let documentId: string | null = null;
+    if (session.user.id) {
+      try {
+        const doc = await prisma.document.create({
+          data: {
+            userId: session.user.id,
+            title: file.name.replace(/\.(pdf|docx)$/i, ''),
+            text: parsed.text,
+            wordCount: parsed.wordCount,
+          },
+        });
+        documentId = doc.id;
+
+        const excess = await prisma.document.findMany({
+          where: { userId: session.user.id },
+          orderBy: { createdAt: 'desc' },
+          skip: 20,
+          select: { id: true },
+        });
+        if (excess.length > 0) {
+          await prisma.document.deleteMany({
+            where: { id: { in: excess.map((d) => d.id) } },
+          });
+        }
+      } catch (e) {
+        // Library persistence is best-effort — never block the quiz flow on it.
+        console.error('Document save failed:', e);
+      }
+    }
+
     return NextResponse.json({
       success: true,
+      documentId,
       text: parsed.text,
       wordCount: parsed.wordCount,
       pageCount: parsed.pageCount,

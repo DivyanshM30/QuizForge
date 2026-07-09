@@ -4,12 +4,14 @@ import { Question, QuizConfig, QuizSession } from '@/lib/types';
 interface QuizStore {
   session: QuizSession | null;
   documentText: string | null;
+  documentId: string | null;
   isAnalyzing: boolean;
   isGenerating: boolean;
   error: string | null;
 
   // Actions
   setDocumentText: (text: string) => void;
+  setDocumentId: (id: string | null) => void;
   setAnalyzing: (isAnalyzing: boolean) => void;
   setGenerating: (isGenerating: boolean) => void;
   setError: (error: string | null) => void;
@@ -25,11 +27,14 @@ interface QuizStore {
 export const useQuizStore = create<QuizStore>((set, get) => ({
   session: null,
   documentText: null,
+  documentId: null,
   isAnalyzing: false,
   isGenerating: false,
   error: null,
 
   setDocumentText: (text: string) => set({ documentText: text }),
+
+  setDocumentId: (id: string | null) => set({ documentId: id }),
 
   setAnalyzing: (isAnalyzing: boolean) => set({ isAnalyzing }),
 
@@ -87,6 +92,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     set({
       session: null,
       documentText: null,
+      documentId: null,
       isAnalyzing: false,
       isGenerating: false,
       error: null,

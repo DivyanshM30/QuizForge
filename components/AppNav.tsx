@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { LogOut, History, Zap, LayoutDashboard } from 'lucide-react';
+import { LogOut, History, Zap, LayoutDashboard, FileText, Settings } from 'lucide-react';
 import { QuizForgeLogo } from '@/components/icons';
 
 interface AppNavProps {
@@ -48,6 +48,15 @@ export default function AppNav({ actions }: AppNavProps) {
                   History
                 </Link>
               )}
+              {pathname !== '/documents' && (
+                <Link
+                  href="/documents"
+                  className="hidden md:flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-medium transition-colors px-3 py-1.5 rounded-full hover:bg-white/5"
+                >
+                  <FileText size={15} />
+                  Documents
+                </Link>
+              )}
               {pathname !== '/upload' && (
                 <Link
                   href="/upload"
@@ -55,6 +64,15 @@ export default function AppNav({ actions }: AppNavProps) {
                 >
                   <Zap size={14} />
                   New Quiz
+                </Link>
+              )}
+              {pathname !== '/settings' && (
+                <Link
+                  href="/settings"
+                  aria-label="Settings"
+                  className="flex items-center text-white/50 hover:text-white/80 text-sm transition-colors px-2 py-1.5 rounded-full hover:bg-white/5"
+                >
+                  <Settings size={15} />
                 </Link>
               )}
               <button

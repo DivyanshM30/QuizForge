@@ -30,6 +30,7 @@ export interface QuizSession {
 
 export interface QuizResult {
   id: string;
+  documentId?: string | null;
   createdAt?: string | Date;
   timestamp: number;
   score: number;

@@ -42,14 +42,24 @@ function StepBadge({ current, step }: { current: Step; step: Step }) {
 }
 
 /* ── Reads ?step=config and notifies parent ── */
-function SearchParamsReader({ onConfigStep }: { onConfigStep: () => void }) {
+function SearchParamsReader({
+  onConfigStep,
+  onQuizStep,
+}: {
+  onConfigStep: () => void;
+  onQuizStep: () => void;
+}) {
   const searchParams = useSearchParams();
-  const { documentText } = useQuizStore();
+  const { documentText, session } = useQuizStore();
   useEffect(() => {
-    if (searchParams.get('step') === 'config' && documentText) {
+    const step = searchParams.get('step');
+    if (step === 'config' && documentText) {
       onConfigStep();
+    } else if (step === 'quiz' && session) {
+      // Retake flow: a session was already started (e.g. from history).
+      onQuizStep();
     }
-  }, [searchParams, documentText, onConfigStep]);
+  }, [searchParams, documentText, session, onConfigStep, onQuizStep]);
   return null;
 }
 
@@ -93,7 +103,7 @@ export default function UploadPage() {
   }, [status, router]);
 
   const {
-    documentText, session, isAnalyzing, isGenerating, error,
+    documentText, documentId, session, isAnalyzing, isGenerating, error,
     setDocumentText, setAnalyzing, setGenerating, setError,
     startQuiz, endQuiz, resetQuiz,
   } = useQuizStore();
@@ -168,7 +178,7 @@ export default function UploadPage() {
     fetch('/api/save-quiz', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(quizResult),
+      body: JSON.stringify({ ...quizResult, documentId }),
     }).catch(console.error);
     endQuiz();
     setStep('results');
@@ -194,7 +204,10 @@ export default function UploadPage() {
     <div className="min-h-screen bg-black flex flex-col text-white">
       {/* Reads ?step=config from URL, wrapped in Suspense as required by Next.js */}
       <Suspense fallback={null}>
-        <SearchParamsReader onConfigStep={() => setStep('config')} />
+        <SearchParamsReader
+          onConfigStep={() => setStep('config')}
+          onQuizStep={() => { hasSavedRef.current = false; setStep('quiz'); }}
+        />
       </Suspense>
 
       {/* Subtle ambient glow */}

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Mail, Lock, AlertCircle } from 'lucide-react';
 import AppNav from '@/components/AppNav';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -67,6 +68,7 @@ export default function LoginPage() {
 
           {/* Card */}
           <div className="liquid-glass rounded-3xl p-8 space-y-5">
+            <GoogleSignInButton />
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email */}
               <div className="space-y-1.5">
@@ -90,9 +92,14 @@ export default function LoginPage() {
 
               {/* Password */}
               <div className="space-y-1.5">
-                <label htmlFor="password" className="text-white/60 text-xs font-medium uppercase tracking-widest">
-                  Password
-                </label>
+                <div className="flex items-baseline justify-between">
+                  <label htmlFor="password" className="text-white/60 text-xs font-medium uppercase tracking-widest">
+                    Password
+                  </label>
+                  <Link href="/forgot-password" className="text-white/40 hover:text-white/80 text-xs transition-colors">
+                    Forgot password?
+                  </Link>
+                </div>
                 <div className="relative">
                   <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
                   <input

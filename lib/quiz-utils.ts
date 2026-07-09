@@ -84,6 +84,36 @@ export function generateRevisionSuggestions(
   return suggestions;
 }
 
+/**
+ * Shuffle questions for a retake: question order AND option positions are
+ * randomized, with correctAnswer remapped to follow its option.
+ */
+export function shuffleQuestions(questions: Question[]): Question[] {
+  const keys: Array<'a' | 'b' | 'c' | 'd'> = ['a', 'b', 'c', 'd'];
+
+  const shuffled = [...questions];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled.map((q) => {
+    const order = [...keys];
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    // order[i] = which ORIGINAL option now sits at position keys[i]
+    const options = { a: '', b: '', c: '', d: '' };
+    let correctAnswer: 'a' | 'b' | 'c' | 'd' = 'a';
+    keys.forEach((pos, i) => {
+      options[pos] = q.options[order[i]];
+      if (order[i] === q.correctAnswer) correctAnswer = pos;
+    });
+    return { ...q, options, correctAnswer };
+  });
+}
+
 /** Narrow an unknown (e.g. a catch variable) to a human-readable message. */
 export function getErrorMessage(err: unknown, fallback = 'Something went wrong'): string {
   return err instanceof Error ? err.message : typeof err === 'string' ? err : fallback;

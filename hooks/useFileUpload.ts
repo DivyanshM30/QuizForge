@@ -25,7 +25,7 @@ interface UseFileUploadOptions {
  */
 export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
   const router = useRouter();
-  const { setDocumentText } = useQuizStore();
+  const { setDocumentText, setDocumentId } = useQuizStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedFileRef = useRef<File | null>(null); // stores the file before Generate is clicked
@@ -64,13 +64,14 @@ export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
         }
         const data = await res.json();
         setDocumentText(data.text);
+        setDocumentId(data.documentId ?? null);
         router.push('/upload?step=config');
       } catch (err) {
         setUploadError(err instanceof Error ? err.message : 'Upload failed');
         setUploadState('error');
       }
     },
-    [onBeforeUpload, router, setDocumentText]
+    [onBeforeUpload, router, setDocumentText, setDocumentId]
   );
 
   /* Select a file without calling the API yet (Generate triggers the upload). */

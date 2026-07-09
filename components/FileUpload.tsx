@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { validateFile } from '@/lib/file-validation';
+import { useQuizStore } from '@/store/quiz-store';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
 
 interface FileUploadProps {
@@ -12,6 +13,7 @@ interface FileUploadProps {
 }
 
 export default function FileUpload({ onFileUploaded, onAnalysisComplete, isAnalyzing = false }: FileUploadProps) {
+  const { setDocumentId } = useQuizStore();
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -39,6 +41,7 @@ export default function FileUpload({ onFileUploaded, onAnalysisComplete, isAnaly
         throw new Error(data.error || 'Failed to analyze document');
       }
       const data = await response.json();
+      setDocumentId(data.documentId ?? null);
       onFileUploaded(file);
       onAnalysisComplete(data.text);
     } catch (err) {
@@ -47,7 +50,7 @@ export default function FileUpload({ onFileUploaded, onAnalysisComplete, isAnaly
     } finally {
       setUploading(false);
     }
-  }, [onFileUploaded, onAnalysisComplete]);
+  }, [onFileUploaded, onAnalysisComplete, setDocumentId]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
