@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuizStore } from '@/store/quiz-store';
+import type { Confidence } from '@/lib/types';
 import Timer from './Timer';
 import FeedbackModal from './FeedbackModal';
 
@@ -15,6 +16,16 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
+
+  /* Confidence capture is opt-in (Settings → Study preferences). */
+  const [confidenceEnabled, setConfidenceEnabled] = useState(false);
+  const [confidence, setConfidence] = useState<Confidence>(null);
+  useEffect(() => {
+    fetch('/api/account')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setConfidenceEnabled(Boolean(d?.confidenceEnabled)))
+      .catch(() => setConfidenceEnabled(false));
+  }, []);
 
   const currentQuestion = getCurrentQuestion();
   const currentIndex = session?.currentQuestionIndex || 0;
@@ -34,7 +45,7 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
 
   const handleSubmit = () => {
     if (!selectedAnswer || hasAnswered) return;
-    submitAnswer(selectedAnswer);
+    submitAnswer(selectedAnswer, confidenceEnabled ? confidence : null);
     setHasAnswered(true);
     setShowFeedback(true);
   };
@@ -42,6 +53,7 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
   const handleContinue = () => {
     setShowFeedback(false);
     setSelectedAnswer(null);
+    setConfidence(null);
     setHasAnswered(false);
     if (currentIndex < totalQuestions - 1) nextQuestion();
     else onComplete();
@@ -121,6 +133,33 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
             </button>
           ))}
         </div>
+
+        {/* Confidence capture (opt-in) */}
+        {confidenceEnabled && !hasAnswered && (
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <span id="confidence-label" className="text-white/40 text-xs font-medium uppercase tracking-widest">
+              How confident are you?
+            </span>
+            <div role="group" aria-labelledby="confidence-label" className="flex items-center gap-2">
+              {(['sure', 'unsure'] as const).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => setConfidence(confidence === level ? null : level)}
+                  aria-pressed={confidence === level}
+                  className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-all cursor-pointer border ${
+                    confidence === level
+                      ? level === 'sure'
+                        ? 'bg-green-500/15 border-green-500/40 text-green-300'
+                        : 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                      : 'bg-white/5 border-white/10 text-white/50 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Action button */}
         {!hasAnswered ? (

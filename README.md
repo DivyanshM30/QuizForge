@@ -19,6 +19,12 @@
 | 🔒 | **Auth** | Email/password auth via NextAuth.js + bcryptjs |
 | 🎬 | **Cinematic UI** | Full-screen looping video hero, liquid-glass design system, dark cinematic aesthetic |
 | ⚡ | **Hero Mini-Upload** | Drop a file right on the landing page — jumps straight to quiz config |
+| 🧠 | **Smart Review** | Missed questions return on a spaced-repetition schedule (1 → 3 → 7 → 21 days) until mastered — on by default, manageable in Settings |
+| 🎯 | **Confidence Calibration** | Rate answers Sure/Unsure; the dashboard surfaces "dangerous gaps" — questions you were confidently wrong about — and they resurface sooner in review |
+| 📁 | **Document Library** | Uploads are saved (20 most recent) — generate new quizzes without re-uploading |
+| 🔁 | **Retake Quiz** | Re-attempt any past quiz with shuffled questions and options |
+| 🔑 | **Google Sign-In & Password Reset** | OAuth via Google plus a full email-based password recovery flow |
+| ⚙️ | **Account Settings** | Profile, password change, study preferences, and account deletion |
 
 ---
 

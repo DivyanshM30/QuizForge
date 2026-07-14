@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Upload, Cpu, ClipboardList, BarChart2, Clock, Layers, Globe } from 'lucide-react';
+import { Upload, Cpu, ClipboardList, BarChart2, Clock, Layers, Globe, Brain, Gauge } from 'lucide-react';
 import { LinkedInIcon, GitHubIcon } from '@/components/icons';
 
 /* ─── Data ────────────────────────────────────────────────── */
@@ -35,6 +35,16 @@ const features = [
     icon: <Layers size={22} />,
     title: 'Full History',
     body: 'Every attempt is saved. Revisit past results, spot patterns, and track how you improve over time.',
+  },
+  {
+    icon: <Brain size={22} />,
+    title: 'Smart Review',
+    body: 'Miss a question and it comes back on a spaced-repetition schedule — 1, 3, 7, 21 days — until you master it.',
+  },
+  {
+    icon: <Gauge size={22} />,
+    title: 'Confidence Calibration',
+    body: 'Rate answers Sure or Unsure and uncover your most dangerous gaps: the ones you are confidently wrong about.',
   },
 ];
 

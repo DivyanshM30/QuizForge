@@ -5,12 +5,13 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import AppNav from '@/components/AppNav';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { User, Lock, AlertTriangle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { User, Lock, AlertTriangle, AlertCircle, CheckCircle2, Brain } from 'lucide-react';
 
 interface Account {
   name: string | null;
   email: string;
   hasPassword: boolean;
+  reviewEnabled: boolean;
   createdAt: string;
 }
 
@@ -48,6 +49,12 @@ export default function SettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  const [reviewEnabled, setReviewEnabled] = useState(false);
+  const [togglingReview, setTogglingReview] = useState(false);
+
+  const [confidenceEnabled, setConfidenceEnabled] = useState(false);
+  const [togglingConfidence, setTogglingConfidence] = useState(false);
+
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
@@ -59,6 +66,8 @@ export default function SettingsPage() {
       const data = await res.json();
       setAccount(data);
       setName(data.name ?? '');
+      setReviewEnabled(Boolean(data.reviewEnabled));
+      setConfidenceEnabled(Boolean(data.confidenceEnabled));
     } catch {
       setBanner({ kind: 'error', text: 'Failed to load your account' });
     } finally {
@@ -115,6 +124,58 @@ export default function SettingsPage() {
       setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Failed to change password' });
     } finally {
       setSavingPassword(false);
+    }
+  };
+
+  const handleToggleReview = async () => {
+    const next = !reviewEnabled;
+    setTogglingReview(true);
+    setBanner(null);
+    try {
+      const res = await fetch('/api/account', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewEnabled: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Failed to update preference');
+      setReviewEnabled(next);
+      setBanner({
+        kind: 'success',
+        text: next
+          ? 'Spaced repetition enabled — missed questions will now enter your review queue'
+          : 'Spaced repetition disabled — your existing queue is kept but paused',
+      });
+    } catch (err) {
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Failed to update preference' });
+    } finally {
+      setTogglingReview(false);
+    }
+  };
+
+  const handleToggleConfidence = async () => {
+    const next = !confidenceEnabled;
+    setTogglingConfidence(true);
+    setBanner(null);
+    try {
+      const res = await fetch('/api/account', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confidenceEnabled: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Failed to update preference');
+      setConfidenceEnabled(next);
+      setBanner({
+        kind: 'success',
+        text: next
+          ? 'Confidence tracking enabled — you can rate Sure/Unsure before each answer'
+          : 'Confidence tracking disabled',
+      });
+    } catch (err) {
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Failed to update preference' });
+    } finally {
+      setTogglingConfidence(false);
     }
   };
 
@@ -254,6 +315,73 @@ export default function SettingsPage() {
               To add one, use the &quot;Forgot password&quot; flow from the sign-in page.
             </p>
           )}
+        </section>
+
+        {/* ── Study preferences ── */}
+        <section className="liquid-glass-card rounded-3xl p-8 space-y-5">
+          <div className="flex items-center gap-3">
+            <span className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+              <Brain size={15} className="text-white/50" />
+            </span>
+            <h2 className="text-white font-semibold">Study preferences</h2>
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1 min-w-0">
+              <p className="text-white text-sm font-medium">Spaced repetition (Daily Review)</p>
+              <p className="text-white/50 text-sm leading-relaxed">
+                Questions you miss come back for review on a 1 → 3 → 7 → 21 day
+                schedule until you master them. Turning this off pauses the queue
+                without deleting it.
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={reviewEnabled}
+              aria-label="Toggle spaced repetition"
+              onClick={handleToggleReview}
+              disabled={togglingReview}
+              className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 cursor-pointer disabled:opacity-60 ${
+                reviewEnabled ? 'bg-green-500/80' : 'bg-white/10 border border-white/20'
+              }`}
+            >
+              <span
+                className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
+                  reviewEnabled ? 'left-6' : 'left-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="h-px bg-white/5" />
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1 min-w-0">
+              <p className="text-white text-sm font-medium">Confidence tracking</p>
+              <p className="text-white/50 text-sm leading-relaxed">
+                Rate each answer Sure or Unsure before submitting. Your dashboard
+                gains a calibration view showing where you&apos;re confidently wrong —
+                the most dangerous knowledge gaps — and those questions come back
+                for review sooner.
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={confidenceEnabled}
+              aria-label="Toggle confidence tracking"
+              onClick={handleToggleConfidence}
+              disabled={togglingConfidence}
+              className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 cursor-pointer disabled:opacity-60 ${
+                confidenceEnabled ? 'bg-green-500/80' : 'bg-white/10 border border-white/20'
+              }`}
+            >
+              <span
+                className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
+                  confidenceEnabled ? 'left-6' : 'left-1'
+                }`}
+              />
+            </button>
+          </div>
         </section>
 
         {/* ── Danger zone ── */}

@@ -172,7 +172,8 @@ export default function UploadPage() {
     hasSavedRef.current = true;
     const timeTaken = Math.floor((Date.now() - session.startTime) / 1000);
     const quizResult = createQuizResult(
-      session.questions, session.userAnswers, timeTaken, session.timeLimit, session.config
+      session.questions, session.userAnswers, timeTaken, session.timeLimit, session.config,
+      session.confidences
     );
     setResult(quizResult);
     fetch('/api/save-quiz', {

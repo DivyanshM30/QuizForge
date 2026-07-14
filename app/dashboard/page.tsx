@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
   Trophy, Target, Clock, Zap, ChevronRight,
-  Upload, Sparkles, X, Loader2, FileText, Flame,
+  Upload, Sparkles, X, Loader2, FileText, Flame, Brain, CheckCircle2, AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatTime, accuracyTextClass } from '@/lib/quiz-utils';
@@ -82,10 +82,49 @@ export default function DashboardPage() {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
 
+  /* ── Daily Review queue (opt-in) ── */
+  const [review, setReview] = useState<{ enabled: boolean; dueCount: number } | null>(null);
+  const [enabling, setEnabling] = useState(false);
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    fetch('/api/review/due')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setReview(d ? { enabled: d.enabled, dueCount: d.dueCount } : null))
+      .catch(() => setReview(null));
+  }, [status]);
+
+  /* ── Feature banner: announces Smart Review + confidence tracking (on by
+     default), dismissible once (remembered in localStorage). */
+  const [showBanner, setShowBanner] = useState(false);
+  useEffect(() => {
+    if (!review) { setShowBanner(false); return; }
+    setShowBanner(!localStorage.getItem('features-banner-dismissed'));
+  }, [review]);
+
+  const dismissBanner = useCallback(() => {
+    localStorage.setItem('features-banner-dismissed', '1');
+    setShowBanner(false);
+  }, []);
+
+  const handleEnableReview = async () => {
+    setEnabling(true);
+    try {
+      const res = await fetch('/api/account', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewEnabled: true }),
+      });
+      if (res.ok) setReview({ enabled: true, dueCount: 0 });
+    } finally {
+      setEnabling(false);
+    }
+  };
+
   /* ── Analytics computation (memoized; only recomputes when history changes) ── */
   const {
     totalQuizzes, avgScore, topScore, totalQuestions, totalCorrect,
     avgTime, streak, performanceData, topicAggregated,
+    confidentlyWrong, confidenceRated, calibrationTopics,
   } = useMemo(() => {
     const totalQuizzes = history.length;
     const avgScore = totalQuizzes > 0
@@ -139,9 +178,32 @@ export default function DashboardPage() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 8);
 
+    /* Calibration: confidently-wrong answers (needs confidence tracking on) */
+    const calibrationMap = new Map<string, number>();
+    let confidentlyWrong = 0;
+    let confidenceRated = 0;
+    history.forEach(q => {
+      if (!q.confidences) return;
+      q.questions?.forEach((question, i) => {
+        const conf = q.confidences?.[i];
+        if (!conf) return;
+        confidenceRated++;
+        if (conf === 'sure' && q.userAnswers?.[i] !== question.correctAnswer) {
+          confidentlyWrong++;
+          const topic = question.topic || 'General';
+          calibrationMap.set(topic, (calibrationMap.get(topic) || 0) + 1);
+        }
+      });
+    });
+    const calibrationTopics = Array.from(calibrationMap.entries())
+      .map(([topic, count]) => ({ topic, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
     return {
       totalQuizzes, avgScore, topScore, totalQuestions, totalCorrect,
       avgTime, streak, performanceData, topicAggregated,
+      confidentlyWrong, confidenceRated, calibrationTopics,
     };
   }, [history]);
 
@@ -168,6 +230,26 @@ export default function DashboardPage() {
       <AppNav />
 
       <main className="relative z-10 flex-1 max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8 space-y-8">
+
+        {/* ── Feature notification banner (dismissible) ── */}
+        {showBanner && (
+          <div className="liquid-glass rounded-xl px-4 py-2.5 flex items-center gap-3 animate-fade-in border-l-2 border-amber-500/50 -mb-3">
+            <Brain size={15} className="text-amber-400 flex-shrink-0" />
+            <p className="flex-1 min-w-0 text-white/70 text-sm truncate">
+              <span className="text-white font-medium">New:</span> Smart Review re-quizzes missed questions on a spaced schedule, and confidence tracking finds your dangerous gaps.{' '}
+              <Link href="/settings" className="text-amber-400 hover:text-amber-300 font-medium underline underline-offset-2 transition-colors">
+                Manage in Settings
+              </Link>
+            </p>
+            <button
+              onClick={dismissBanner}
+              aria-label="Dismiss notification"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex-shrink-0"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* ── Page Header ── */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 animate-fade-in">
@@ -227,6 +309,132 @@ export default function DashboardPage() {
         {/* ── Charts Row ── */}
         {totalQuizzes > 0 && (
           <DashboardCharts performanceData={performanceData} topicAggregated={topicAggregated} />
+        )}
+
+        {/* ── Daily Review (opt-in) ── */}
+        {review !== null && (
+          <div className="animate-fade-in" style={{ animationDelay: '200ms' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <Brain size={14} className="text-white/40" />
+              <h2 className="text-white/40 text-xs font-medium uppercase tracking-widest">
+                Daily Review
+              </h2>
+            </div>
+            <div className="liquid-glass rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              {!review.enabled ? (
+                <>
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <span className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                      <Brain size={16} className="text-white/50" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-white font-medium text-sm">Spaced repetition is off</p>
+                      <p className="text-white/40 text-xs">
+                        Enable it and questions you miss will come back for review on a
+                        1 → 3 → 7 → 21 day schedule until you master them
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleEnableReview}
+                    disabled={enabling}
+                    className="flex items-center gap-1.5 bg-white text-black font-semibold px-5 py-2 rounded-xl hover:bg-white/90 disabled:opacity-60 transition-all text-sm cursor-pointer flex-shrink-0 self-start sm:self-auto"
+                  >
+                    {enabling ? 'Enabling…' : 'Enable spaced repetition'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <span className={`w-10 h-10 rounded-xl border flex items-center justify-center flex-shrink-0 ${
+                      review.dueCount > 0
+                        ? 'bg-amber-500/10 border-amber-500/20'
+                        : 'bg-green-500/10 border-green-500/20'
+                    }`}>
+                      {review.dueCount > 0
+                        ? <Brain size={16} className="text-amber-400" />
+                        : <CheckCircle2 size={16} className="text-green-400" />}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-white font-medium text-sm">
+                        {review.dueCount > 0
+                          ? `${review.dueCount} ${review.dueCount === 1 ? 'question' : 'questions'} due for review`
+                          : 'All caught up'}
+                      </p>
+                      <p className="text-white/40 text-xs">
+                        {review.dueCount > 0
+                          ? 'Spaced repetition of questions you missed — a few minutes locks them in'
+                          : 'Missed questions come back on a 1 → 3 → 7 → 21 day schedule'}
+                      </p>
+                    </div>
+                  </div>
+                  {review.dueCount > 0 && (
+                    <Link
+                      href="/review"
+                      className="flex items-center gap-1.5 bg-white text-black font-semibold px-5 py-2 rounded-xl hover:bg-white/90 transition-all text-sm cursor-pointer flex-shrink-0 self-start sm:self-auto"
+                    >
+                      Start review <ChevronRight size={14} />
+                    </Link>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Calibration: dangerous gaps (confidence tracking) ── */}
+        {confidenceRated > 0 && (
+          <div className="animate-fade-in" style={{ animationDelay: '225ms' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle size={14} className="text-white/40" />
+              <h2 className="text-white/40 text-xs font-medium uppercase tracking-widest">
+                Dangerous Gaps
+              </h2>
+            </div>
+            <div className="liquid-glass rounded-2xl px-5 py-4">
+              {confidentlyWrong === 0 ? (
+                <div className="flex items-center gap-4">
+                  <span className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle2 size={16} className="text-green-400" />
+                  </span>
+                  <div>
+                    <p className="text-white font-medium text-sm">Well calibrated</p>
+                    <p className="text-white/40 text-xs">
+                      No confidently-wrong answers yet — when you&apos;re sure, you&apos;re right
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4">
+                    <span className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle size={16} className="text-red-400" />
+                    </span>
+                    <div>
+                      <p className="text-white font-medium text-sm">
+                        {confidentlyWrong} {confidentlyWrong === 1 ? 'answer' : 'answers'} you were sure about — and got wrong
+                      </p>
+                      <p className="text-white/40 text-xs">
+                        These are your most dangerous gaps: you don&apos;t know that you don&apos;t know them
+                      </p>
+                    </div>
+                  </div>
+                  {calibrationTopics.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pl-14">
+                      {calibrationTopics.map(({ topic, count }) => (
+                        <span
+                          key={topic}
+                          className="px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-300 text-xs font-medium"
+                        >
+                          {topic} · {count}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* ── New Quiz Upload ── */}

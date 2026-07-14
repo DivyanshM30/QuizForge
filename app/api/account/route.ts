@@ -14,7 +14,7 @@ export async function GET() {
     }
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { id: true, name: true, email: true, password: true, createdAt: true },
+      select: { id: true, name: true, email: true, password: true, createdAt: true, reviewEnabled: true, confidenceEnabled: true },
     });
     if (!user) return NextResponse.json({ message: 'Not found' }, { status: 404 });
     return NextResponse.json({
@@ -22,6 +22,8 @@ export async function GET() {
       name: user.name,
       email: user.email,
       hasPassword: Boolean(user.password),
+      reviewEnabled: user.reviewEnabled,
+      confidenceEnabled: user.confidenceEnabled,
       createdAt: user.createdAt,
     });
   } catch (error) {
@@ -38,14 +40,35 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name } = await req.json();
-    if (typeof name !== 'string' || name.trim().length === 0 || name.length > 80) {
-      return NextResponse.json({ message: 'Invalid name' }, { status: 400 });
+    const body = await req.json();
+    const data: { name?: string; reviewEnabled?: boolean; confidenceEnabled?: boolean } = {};
+
+    if ('name' in body) {
+      const { name } = body;
+      if (typeof name !== 'string' || name.trim().length === 0 || name.length > 80) {
+        return NextResponse.json({ message: 'Invalid name' }, { status: 400 });
+      }
+      data.name = name.trim();
+    }
+    if ('reviewEnabled' in body) {
+      if (typeof body.reviewEnabled !== 'boolean') {
+        return NextResponse.json({ message: 'Invalid reviewEnabled value' }, { status: 400 });
+      }
+      data.reviewEnabled = body.reviewEnabled;
+    }
+    if ('confidenceEnabled' in body) {
+      if (typeof body.confidenceEnabled !== 'boolean') {
+        return NextResponse.json({ message: 'Invalid confidenceEnabled value' }, { status: 400 });
+      }
+      data.confidenceEnabled = body.confidenceEnabled;
+    }
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ message: 'Nothing to update' }, { status: 400 });
     }
 
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { name: name.trim() },
+      data,
     });
 
     return NextResponse.json({ message: 'Profile updated' });
