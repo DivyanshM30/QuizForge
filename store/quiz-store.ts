@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Question, QuizConfig, QuizSession } from '@/lib/types';
+import { Question, QuizConfig, QuizSession, Confidence } from '@/lib/types';
 
 interface QuizStore {
   session: QuizSession | null;
@@ -16,7 +16,7 @@ interface QuizStore {
   setGenerating: (isGenerating: boolean) => void;
   setError: (error: string | null) => void;
   startQuiz: (questions: Question[], config: QuizConfig) => void;
-  submitAnswer: (answer: string) => void;
+  submitAnswer: (answer: string, confidence?: Confidence) => void;
   nextQuestion: () => void;
   endQuiz: () => void;
   resetQuiz: () => void;
@@ -48,6 +48,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       questions,
       currentQuestionIndex: 0,
       userAnswers: new Array(questions.length).fill(null),
+      confidences: new Array(questions.length).fill(null),
       startTime: Date.now(),
       timeLimit: timeLimitSeconds,
       config,
@@ -55,17 +56,20 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     set({ session, error: null });
   },
 
-  submitAnswer: (answer: string) => {
+  submitAnswer: (answer: string, confidence: Confidence = null) => {
     const { session } = get();
     if (!session) return;
 
     const newAnswers = [...session.userAnswers];
     newAnswers[session.currentQuestionIndex] = answer;
+    const newConfidences = [...session.confidences];
+    newConfidences[session.currentQuestionIndex] = confidence;
 
     set({
       session: {
         ...session,
         userAnswers: newAnswers,
+        confidences: newConfidences,
       },
     });
   },

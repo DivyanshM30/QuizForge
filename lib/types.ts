@@ -19,10 +19,13 @@ export interface QuizConfig {
   difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
 }
 
+export type Confidence = 'sure' | 'unsure' | null;
+
 export interface QuizSession {
   questions: Question[];
   currentQuestionIndex: number;
   userAnswers: (string | null)[];
+  confidences: Confidence[];
   startTime: number;
   timeLimit: number; // in seconds
   config: QuizConfig;
@@ -44,6 +47,7 @@ export interface QuizResult {
   config: QuizConfig;
   questions: Question[];
   userAnswers: (string | null)[];
+  confidences?: Confidence[] | null;
 }
 
 export interface TopicPerformance {

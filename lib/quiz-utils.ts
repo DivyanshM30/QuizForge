@@ -1,4 +1,4 @@
-import { Question, QuizResult, TopicPerformance, QuizConfig } from './types';
+import { Question, QuizResult, TopicPerformance, QuizConfig, Confidence } from './types';
 import type { QuizResult as QuizResultRow } from '@prisma/client';
 
 export function calculateScore(
@@ -142,6 +142,7 @@ export function deserializeQuizResult(row: QuizResultRow) {
     revisionSuggestions: JSON.parse(row.revisionSuggestions),
     questions: JSON.parse(row.questions),
     userAnswers: JSON.parse(row.userAnswers),
+    confidences: row.confidences ? JSON.parse(row.confidences) : null,
   };
 }
 
@@ -160,7 +161,8 @@ export function createQuizResult(
   userAnswers: (string | null)[],
   timeTaken: number,
   timeLimit: number,
-  config: QuizConfig
+  config: QuizConfig,
+  confidences: Confidence[] | null = null
 ): QuizResult {
   const score = calculateScore(questions, userAnswers);
   const accuracy = calculateAccuracy(score, questions.length);
@@ -182,5 +184,6 @@ export function createQuizResult(
     config,
     questions,
     userAnswers,
+    confidences,
   };
 }
