@@ -25,6 +25,9 @@
 | 🔁 | **Retake Quiz** | Re-attempt any past quiz with shuffled questions and options |
 | 🔑 | **Google Sign-In & Password Reset** | OAuth via Google plus a full email-based password recovery flow |
 | ⚙️ | **Account Settings** | Profile, password change, study preferences, and account deletion |
+| 🔦 | **Cram Mode** | One-click quiz built from your missed questions and topics under 60% accuracy |
+| 💬 | **Ask the AI** | Follow-up explanations in the feedback modal, grounded in your own uploaded document |
+| 🔗 | **Shareable Quizzes** | Public challenge links with a server-graded leaderboard — no account needed to play |
 
 ---
 

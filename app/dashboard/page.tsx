@@ -6,10 +6,11 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
   Trophy, Target, Clock, Zap, ChevronRight,
-  Upload, Sparkles, X, Loader2, FileText, Flame, Brain, CheckCircle2, AlertTriangle,
+  Upload, Sparkles, X, Loader2, FileText, Flame, Brain, CheckCircle2, AlertTriangle, Flashlight,
 } from 'lucide-react';
 import Link from 'next/link';
-import { formatTime, accuracyTextClass } from '@/lib/quiz-utils';
+import { formatTime, accuracyTextClass, shuffleQuestions } from '@/lib/quiz-utils';
+import { useQuizStore } from '@/store/quiz-store';
 import { useHistory } from '@/hooks/useHistory';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import AppNav from '@/components/AppNav';
@@ -105,6 +106,33 @@ export default function DashboardPage() {
     localStorage.setItem('features-banner-dismissed', '1');
     setShowBanner(false);
   }, []);
+
+  /* ── Cram Mode: build a quiz from past mistakes + weak topics ── */
+  const { startQuiz } = useQuizStore();
+  const [cramCount, setCramCount] = useState<10 | 20 | 30>(10);
+  const [cramLoading, setCramLoading] = useState(false);
+  const [cramError, setCramError] = useState<string | null>(null);
+
+  const handleCram = async () => {
+    setCramLoading(true);
+    setCramError(null);
+    try {
+      const res = await fetch(`/api/cram?count=${cramCount}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to build cram quiz');
+      const questions = shuffleQuestions(data.questions);
+      startQuiz(questions, {
+        numQuestions: questions.length,
+        timeLimit: Math.max(5, Math.ceil(questions.length * 1)),
+        difficulty: 'mixed',
+        cram: true,
+      });
+      router.push('/upload?step=quiz');
+    } catch (err) {
+      setCramError(err instanceof Error ? err.message : 'Failed to build cram quiz');
+      setCramLoading(false);
+    }
+  };
 
   const handleEnableReview = async () => {
     setEnabling(true);
@@ -432,6 +460,61 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Cram Mode ── */}
+        {totalQuizzes > 0 && (
+          <div className="animate-fade-in" style={{ animationDelay: '235ms' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <Flashlight size={14} className="text-white/40" />
+              <h2 className="text-white/40 text-xs font-medium uppercase tracking-widest">
+                Cram Mode
+              </h2>
+            </div>
+            <div className="liquid-glass rounded-2xl px-5 py-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <span className="w-10 h-10 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center flex-shrink-0">
+                    <Flashlight size={16} className="text-fuchsia-400" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-white font-medium text-sm">Cram your weak spots</p>
+                    <p className="text-white/40 text-xs">
+                      A quiz built only from questions you missed and topics under 60% — study exactly what you don&apos;t know
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-auto">
+                  <div role="group" aria-label="Cram quiz length" className="flex items-center gap-1">
+                    {([10, 20, 30] as const).map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => setCramCount(n)}
+                        aria-pressed={cramCount === n}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-all cursor-pointer border ${
+                          cramCount === n
+                            ? 'bg-white text-black border-white'
+                            : 'bg-white/5 border-white/10 text-white/50 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={handleCram}
+                    disabled={cramLoading}
+                    className="flex items-center gap-1.5 bg-white text-black font-semibold px-5 py-2 rounded-xl hover:bg-white/90 disabled:opacity-60 transition-all text-sm cursor-pointer"
+                  >
+                    {cramLoading ? <><Loader2 size={14} className="animate-spin" /> Building…</> : 'Start cram'}
+                  </button>
+                </div>
+              </div>
+              {cramError && (
+                <p className="text-amber-400/90 text-xs pl-14">{cramError}</p>
               )}
             </div>
           </div>

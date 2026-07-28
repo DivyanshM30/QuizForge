@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Upload, Cpu, ClipboardList, BarChart2, Clock, Layers, Globe, Brain, Gauge } from 'lucide-react';
+import { Upload, Cpu, ClipboardList, BarChart2, Clock, Layers, Globe, Brain, Gauge, Flashlight, MessageCircle, Share2, FolderOpen } from 'lucide-react';
 import { LinkedInIcon, GitHubIcon } from '@/components/icons';
 
 /* ─── Data ────────────────────────────────────────────────── */
@@ -45,6 +45,26 @@ const features = [
     icon: <Gauge size={22} />,
     title: 'Confidence Calibration',
     body: 'Rate answers Sure or Unsure and uncover your most dangerous gaps: the ones you are confidently wrong about.',
+  },
+  {
+    icon: <Flashlight size={22} />,
+    title: 'Cram Mode',
+    body: 'One click builds a quiz from your missed questions and weakest topics — study exactly what you don’t know.',
+  },
+  {
+    icon: <MessageCircle size={22} />,
+    title: 'Ask the AI',
+    body: 'Confused by an answer? Ask follow-up questions and get explanations grounded in your own document.',
+  },
+  {
+    icon: <Share2 size={22} />,
+    title: 'Challenge Friends',
+    body: 'Share a public quiz link with a live leaderboard — friends compete without needing an account.',
+  },
+  {
+    icon: <FolderOpen size={22} />,
+    title: 'Document Library',
+    body: 'Every upload is saved to your library, so you can spin up fresh quizzes anytime without re-uploading.',
   },
 ];
 

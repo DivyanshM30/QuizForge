@@ -63,6 +63,11 @@ export default function QuizHistory() {
               <span className={`text-2xl font-bold tabular-nums ${accuracyTextClass(quiz.accuracy)}`}>
                 {quiz.accuracy}%
               </span>
+              {quiz.config?.cram && (
+                <span className="px-2 py-0.5 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-300 text-[10px] font-semibold uppercase tracking-wider">
+                  Cram
+                </span>
+              )}
               <span className="text-white/50 text-sm">
                 {quiz.score}/{quiz.totalQuestions} correct
               </span>

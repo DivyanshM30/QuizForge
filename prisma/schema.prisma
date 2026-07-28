@@ -20,6 +20,7 @@ model User {
   documents Document[]
   resetTokens PasswordResetToken[]
   reviewItems ReviewItem[]
+  shares    ShareLink[]
 }
 
 model PasswordResetToken {
@@ -32,6 +33,35 @@ model PasswordResetToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model ShareLink {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  ownerId   String
+  resultId  String?  // source QuizResult (informational; questions are snapshotted)
+  title     String
+  questions String   // JSON snapshot of Question[] at share time
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  entries   ShareEntry[]
+
+  @@index([ownerId])
+}
+
+model ShareEntry {
+  id        String   @id @default(cuid())
+  shareId   String
+  name      String
+  score     Int
+  total     Int
+  createdAt DateTime @default(now())
+
+  share     ShareLink @relation(fields: [shareId], references: [id], onDelete: Cascade)
+
+  @@index([shareId, score])
 }
 
 model ReviewItem {
