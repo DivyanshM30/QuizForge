@@ -17,6 +17,8 @@ export interface QuizConfig {
   numQuestions: number;
   timeLimit: number; // in minutes
   difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
+  /** True when this quiz was built by Cram Mode from past mistakes. */
+  cram?: boolean;
 }
 
 export type Confidence = 'sure' | 'unsure' | null;

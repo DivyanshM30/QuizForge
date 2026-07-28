@@ -7,7 +7,7 @@ import ResultsDashboard from '@/components/ResultsDashboard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import AppNav from '@/components/AppNav';
 import Link from 'next/link';
-import { ChevronLeft, Zap, RotateCcw } from 'lucide-react';
+import { ChevronLeft, Zap, RotateCcw, Share2, Check, Ban } from 'lucide-react';
 import { useQuizStore } from '@/store/quiz-store';
 import { shuffleQuestions } from '@/lib/quiz-utils';
 
@@ -17,6 +17,44 @@ export default function QuizDetailPage() {
   const [result, setResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
   const { startQuiz } = useQuizStore();
+
+  /* ── Share: create a public challenge link + copy to clipboard ── */
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
+
+  const handleShare = async () => {
+    setShareBusy(true);
+    try {
+      let token = shareToken;
+      if (!token) {
+        const res = await fetch('/api/share', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resultId: params.id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to create link');
+        token = data.token;
+        setShareToken(token);
+      }
+      await navigator.clipboard.writeText(`${window.location.origin}/q/${token}`);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch {
+      // clipboard or network failure — button state simply resets
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (!shareToken) return;
+    if (!confirm('Revoke this link? Anyone with it will lose access (leaderboard is kept).')) return;
+    await fetch(`/api/share/${shareToken}`, { method: 'DELETE' });
+    setShareToken(null);
+    setShareCopied(false);
+  };
 
   /* Retake: same questions, freshly shuffled (order + option positions). */
   const handleRetake = () => {
@@ -91,13 +129,32 @@ export default function QuizDetailPage() {
             </h1>
             <p className="text-white/40 text-sm">Detailed breakdown of your attempt</p>
           </div>
-          <button
-            onClick={handleRetake}
-            className="flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm cursor-pointer self-start sm:self-auto"
-          >
-            <RotateCcw size={15} />
-            Retake Quiz
-          </button>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {shareToken && (
+              <button
+                onClick={handleRevoke}
+                aria-label="Revoke share link"
+                className="flex items-center gap-1.5 bg-white/5 border border-white/10 text-white/50 hover:text-red-400 hover:border-red-500/30 font-medium px-4 py-2.5 rounded-xl transition-all text-sm cursor-pointer"
+              >
+                <Ban size={14} />
+                Revoke
+              </button>
+            )}
+            <button
+              onClick={handleShare}
+              disabled={shareBusy}
+              className="flex items-center gap-2 bg-white/10 border border-white/20 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-white/15 disabled:opacity-60 transition-all text-sm cursor-pointer"
+            >
+              {shareCopied ? <><Check size={15} className="text-green-400" /> Link copied!</> : <><Share2 size={15} /> Share</>}
+            </button>
+            <button
+              onClick={handleRetake}
+              className="flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm cursor-pointer"
+            >
+              <RotateCcw size={15} />
+              Retake Quiz
+            </button>
+          </div>
         </div>
 
         <ResultsDashboard result={result} onRetake={() => router.push('/upload')} />

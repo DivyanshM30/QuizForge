@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Question, QuizConfig } from './types';
+
+const EXPLAIN_MAX_CONTEXT = 3000;
 import { getErrorMessage } from './quiz-utils';
 
 function getGenAI() {
@@ -214,3 +216,69 @@ Format: [{"id":"q1","question":"...","options":{"a":"...","b":"...","c":"...","d
   }
   return questions.slice(0, config.numQuestions);
 }
+
+/**
+ * Pick the most relevant excerpt of the source document for a question:
+ * paragraphs scored by word overlap with the question text, best first,
+ * capped at EXPLAIN_MAX_CONTEXT characters.
+ */
+export function relevantExcerpt(documentText: string, questionText: string): string {
+  const terms = new Set(
+    questionText.toLowerCase().split(/\W+/).filter((w) => w.length > 3)
+  );
+  const paragraphs = documentText.split(/\n\s*\n/).filter((p) => p.trim().length > 40);
+  const scored = paragraphs
+    .map((p) => {
+      const words = p.toLowerCase().split(/\W+/);
+      const score = words.reduce((acc, w) => acc + (terms.has(w) ? 1 : 0), 0);
+      return { p: p.trim(), score };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  let out = '';
+  for (const { p } of scored) {
+    if (out.length + p.length > EXPLAIN_MAX_CONTEXT) break;
+    out += p + '\n\n';
+  }
+  return out.trim();
+}
+
+/**
+ * Answer a learner's follow-up question about a quiz question they just saw.
+ * Grounded in the source document excerpt when available.
+ */
+export async function explainAnswer(
+  question: Question,
+  userAnswer: string | null,
+  userQuery: string,
+  context?: string
+): Promise<string> {
+  const optionLines = (['a', 'b', 'c', 'd'] as const)
+    .map((k) => `${k.toUpperCase()}) ${question.options[k]}`)
+    .join('\n');
+
+  const prompt = `You are a patient tutor inside a quiz app. A student just answered a multiple-choice question and has a follow-up question.
+
+QUIZ QUESTION:
+${question.question}
+${optionLines}
+Correct answer: ${question.correctAnswer.toUpperCase()}) ${question.options[question.correctAnswer]}
+Student's answer: ${userAnswer ? `${userAnswer.toUpperCase()}) ${question.options[userAnswer as 'a' | 'b' | 'c' | 'd'] ?? ''}` : 'not answered'}
+Original explanation: ${question.explanation || 'none provided'}
+
+${context ? `SOURCE MATERIAL (from the student's own study document — ground your answer in this):\n${context}\n` : 'No source material available — answer from the question context only.'}
+
+STUDENT'S FOLLOW-UP QUESTION:
+${userQuery}
+
+Rules:
+- Answer the follow-up directly, in plain language, max 180 words.
+- If the source material is provided, base your answer on it and say so naturally.
+- If their answer was wrong, address the specific misconception their choice suggests.
+- Never invent facts beyond the question and source material. If you cannot answer from them, say so.
+- Plain text only, no markdown headers or bullet lists.`;
+
+  return (await generateWithFallbackModels(prompt)).trim();
+}
+
