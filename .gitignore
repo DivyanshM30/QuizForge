@@ -40,6 +40,9 @@ prisma/dev.db
 
 /lib/generated/prisma
 
+# claude code local settings
+.claude/
+
 # audit report
 audit.md
 audit.html
