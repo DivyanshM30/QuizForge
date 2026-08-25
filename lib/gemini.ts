@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Question, QuizConfig } from './types';
+import { getErrorMessage } from './quiz-utils';
 
 const EXPLAIN_MAX_CONTEXT = 3000;
-import { getErrorMessage } from './quiz-utils';
 
 function getGenAI() {
   const API_KEY = process.env.GEMINI_API_KEY;

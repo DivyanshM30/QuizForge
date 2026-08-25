@@ -15,6 +15,9 @@ export async function sendEmail({ to, subject, html }: SendEmailArgs): Promise<v
   const from = process.env.EMAIL_FROM || 'QuizForge <onboarding@resend.dev>';
 
   if (!apiKey) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('RESEND_API_KEY must be configured in production');
+    }
     console.log(`[email:dev-fallback] To: ${to}\nSubject: ${subject}\n${html}`);
     return;
   }

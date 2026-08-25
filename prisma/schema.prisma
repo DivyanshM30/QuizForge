@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["strictUndefinedChecks"]
 }
 
 datasource db {
@@ -12,6 +13,7 @@ model User {
   name      String?
   email     String   @unique
   password  String?  // null for OAuth-only accounts
+  googleSubject String? @unique // stable Google identity; never link OAuth by email alone
   reviewEnabled Boolean @default(true) // on by default; users can opt out in Settings
   confidenceEnabled Boolean @default(true) // on by default; users can opt out in Settings
   createdAt DateTime @default(now())

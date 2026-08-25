@@ -8,6 +8,7 @@ import AppNav from '@/components/AppNav';
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [delivery, setDelivery] = useState<'development-console' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,10 +22,11 @@ export default function ForgotPasswordPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(data.message || 'Something went wrong');
       }
+      setDelivery(data.delivery === 'development-console' ? data.delivery : null);
       setSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -70,10 +72,18 @@ export default function ForgotPasswordPage() {
                 <span className="w-12 h-12 rounded-2xl bg-green-500/20 flex items-center justify-center">
                   <CheckCircle2 size={22} className="text-green-400" />
                 </span>
-                <p className="text-white/80 text-sm leading-relaxed">
-                  If an account exists for <span className="text-white">{email}</span>,
-                  a reset link is on its way. Check your inbox (and spam folder).
-                </p>
+                {delivery === 'development-console' ? (
+                  <p className="text-white/80 text-sm leading-relaxed">
+                    Email delivery is not configured for localhost. If an account exists for{' '}
+                    <span className="text-white">{email}</span>, its reset link is printed in the
+                    Next.js server terminal instead of being sent to your inbox.
+                  </p>
+                ) : (
+                  <p className="text-white/80 text-sm leading-relaxed">
+                    If an account exists for <span className="text-white">{email}</span>,
+                    a reset link is on its way. Check your inbox (and spam folder).
+                  </p>
+                )}
                 <p className="text-white/40 text-xs">The link is valid for 1 hour.</p>
               </div>
             ) : (

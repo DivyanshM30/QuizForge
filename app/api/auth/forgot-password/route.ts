@@ -3,12 +3,23 @@ import { createHash, randomBytes } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { sendEmail, passwordResetEmailHtml } from '@/lib/email';
+import { isValidEmail, normalizeEmail } from '@/lib/auth-security';
 
 export const dynamic = 'force-dynamic';
 
 const GENERIC_OK = {
   message: 'If an account exists for that email, a reset link has been sent.',
 };
+
+function genericOkResponse() {
+  const developmentConsoleDelivery =
+    process.env.NODE_ENV !== 'production' && !process.env.RESEND_API_KEY;
+
+  return NextResponse.json({
+    ...GENERIC_OK,
+    ...(developmentConsoleDelivery ? { delivery: 'development-console' } : {}),
+  });
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,15 +32,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { email } = await req.json();
-    if (!email || typeof email !== 'string') {
+    const { email: rawEmail } = await req.json();
+    if (!rawEmail || typeof rawEmail !== 'string') {
       return NextResponse.json({ message: 'Email is required' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const email = normalizeEmail(rawEmail);
+    if (!isValidEmail(email)) return genericOkResponse();
+
+    const user = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+      select: { id: true },
+    });
 
     // Always answer 200 with the same body — no user enumeration.
-    if (!user) return NextResponse.json(GENERIC_OK);
+    if (!user) return genericOkResponse();
 
     const token = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(token).digest('hex');
@@ -53,10 +70,10 @@ export async function POST(req: NextRequest) {
       html: passwordResetEmailHtml(resetUrl),
     });
 
-    return NextResponse.json(GENERIC_OK);
+    return genericOkResponse();
   } catch (error) {
     console.error('Forgot-password error:', error);
     // Still generic: never leak whether the account exists.
-    return NextResponse.json(GENERIC_OK);
+    return genericOkResponse();
   }
 }

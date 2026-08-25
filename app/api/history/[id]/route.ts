@@ -7,20 +7,20 @@ import { deserializeQuizResult } from "@/lib/quiz-utils"
 export const dynamic = 'force-dynamic'
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session || !session.user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { message: "Unauthorized" },
         { status: 401 }
       )
     }
 
-    const { id } = params
+    const { id } = await params
     
     const userId = session.user.id
 
@@ -49,20 +49,20 @@ export async function GET(
 }
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session || !session.user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { message: "Unauthorized" },
         { status: 401 }
       )
     }
 
-    const { id } = params
+    const { id } = await params
     
     const userId = session.user.id
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseDocument } from '@/lib/document-parser';
-import { validateFile } from '@/lib/file-validation';
+import { validateFile, validateFileSignature } from '@/lib/file-validation';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized — please sign in' },
         { status: 401 }
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit: 20 uploads per 10 minutes per user
-    const userId = session.user.id || session.user.email || 'anon';
+    const userId = session.user.id;
     const rl = checkRateLimit(`analyze:${userId}`, 20, 10 * 60 * 1000);
     if (!rl.success) {
       return NextResponse.json(
@@ -50,38 +50,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const signatureValidation = await validateFileSignature(file);
+    if (!signatureValidation.valid) {
+      return NextResponse.json(
+        { error: signatureValidation.error },
+        { status: 400 }
+      );
+    }
+
     // Parse document
     const parsed = await parseDocument(file);
 
     // Persist to the user's document library (keep the 20 most recent).
     let documentId: string | null = null;
-    if (session.user.id) {
-      try {
-        const doc = await prisma.document.create({
-          data: {
-            userId: session.user.id,
-            title: file.name.replace(/\.(pdf|docx)$/i, ''),
-            text: parsed.text,
-            wordCount: parsed.wordCount,
-          },
-        });
-        documentId = doc.id;
+    try {
+      const doc = await prisma.document.create({
+        data: {
+          userId: session.user.id,
+          title: file.name.replace(/\.(pdf|docx)$/i, ''),
+          text: parsed.text,
+          wordCount: parsed.wordCount,
+        },
+      });
+      documentId = doc.id;
 
-        const excess = await prisma.document.findMany({
-          where: { userId: session.user.id },
-          orderBy: { createdAt: 'desc' },
-          skip: 20,
-          select: { id: true },
+      const excess = await prisma.document.findMany({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: 'desc' },
+        skip: 20,
+        select: { id: true },
+      });
+      if (excess.length > 0) {
+        await prisma.document.deleteMany({
+          where: { id: { in: excess.map((d) => d.id) } },
         });
-        if (excess.length > 0) {
-          await prisma.document.deleteMany({
-            where: { id: { in: excess.map((d) => d.id) } },
-          });
-        }
-      } catch (e) {
-        // Library persistence is best-effort — never block the quiz flow on it.
-        console.error('Document save failed:', e);
       }
+    } catch (e) {
+      // Library persistence is best-effort — never block the quiz flow on it.
+      console.error('Document save failed:', e);
     }
 
     return NextResponse.json({
@@ -96,14 +102,19 @@ export async function POST(request: NextRequest) {
     const message = getErrorMessage(error, 'Failed to analyze document');
 
     // Treat parsing/structure issues as a 400 (client input problem), not a 500
-    const isBadPdf =
+    const isBadDocument =
       message.toLowerCase().includes('failed to parse pdf') ||
+      message.toLowerCase().includes('failed to parse docx') ||
       message.toLowerCase().includes('pdf appears to be corrupted') ||
-      message.toLowerCase().includes('invalid pdf structure');
+      message.toLowerCase().includes('invalid pdf structure') ||
+      message.toLowerCase().includes('safe extraction') ||
+      message.toLowerCase().includes('safe compression') ||
+      message.toLowerCase().includes('extracted text') ||
+      message.toLowerCase().includes('page limit');
 
     return NextResponse.json(
       { error: message },
-      { status: isBadPdf ? 400 : 500 }
+      { status: isBadDocument ? 400 : 500 }
     );
   }
 }

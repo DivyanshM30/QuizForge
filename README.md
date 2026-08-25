@@ -2,7 +2,7 @@
 
 > Upload any study material and QuizForge instantly crafts AI-powered MCQs, tracks your performance, and turns revision into results.
 
-**Live demo** → [thequizforge.vercel.app](https://thequizforge.vercel.app) &nbsp;|&nbsp; Built by [Divyansh Mishra](https://divyanshm.dev)
+**Live demo** → [QuizForge](https://quizforge.divyanshm.dev) &nbsp;|&nbsp; Built by [Divyansh Mishra](https://divyanshm.dev)
 
 ---
 
@@ -71,10 +71,16 @@ GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 
 NEXTAUTH_SECRET=your_super_secret_key_here
-NEXTAUTH_URL=https://thequizforge.vercel.app
+NEXTAUTH_URL=http://localhost:3000
+
+# Optional on localhost; required to deliver password-reset email to an inbox
+RESEND_API_KEY=your_resend_api_key
+EMAIL_FROM="QuizForge <onboarding@resend.dev>"
 ```
 
-> **Tip**: For local development, set `NEXTAUTH_URL=http://localhost:3000`. For production it should be `https://thequizforge.vercel.app`.
+> **Tip**: Keep `NEXTAUTH_URL=http://localhost:3000` for local development. In production, set it to the canonical site URL: `https://quizforge.divyanshm.dev`.
+
+When `RESEND_API_KEY` is unset during local development, password-reset links are printed to the Next.js server terminal instead of being emailed. For production, verify a sending domain in Resend and set `EMAIL_FROM` to an address on that domain; `onboarding@resend.dev` is intended only for testing.
 
 ### 3. Push Database Schema
 
@@ -171,9 +177,13 @@ quizforge/
 | `GEMINI_API_KEY` | ✅ | From Google AI Studio |
 | `GEMINI_MODEL` | ❌ | Defaults to `gemini-2.5-flash` |
 | `NEXTAUTH_SECRET` | ✅ | Any long random string |
-| `NEXTAUTH_URL` | ✅ | Your Vercel deployment URL |
+| `NEXTAUTH_URL` | ✅ | Canonical production URL: `https://quizforge.divyanshm.dev` |
+| `RESEND_API_KEY` | ✅ | Required for password-reset email delivery |
+| `EMAIL_FROM` | ✅ | Resend-verified production sender (for example, `QuizForge <noreply@quizforge.divyanshm.dev>`) |
 
-4. Deploy. Vercel auto-runs `prisma generate` via the `postinstall` script.
+4. Apply schema changes to the production database with `npx prisma db push` using the production `DATABASE_URL`.
+5. Configure `quizforge.divyanshm.dev` as the production custom domain for the Vercel project.
+6. Deploy. Vercel auto-runs the dependency compatibility patches and `prisma generate` via the `postinstall` script.
 
 ---
 
