@@ -8,16 +8,17 @@ export const dynamic = 'force-dynamic';
 /** Fetch one document including its text (for "new quiz from this document"). */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const doc = await prisma.document.findFirst({
-      where: { id: params.id, userId: session.user.id },
+      where: { id, userId: session.user.id },
     });
     if (!doc) {
       return NextResponse.json({ message: 'Document not found' }, { status: 404 });
@@ -33,9 +34,10 @@ export async function GET(
 /** Rename a document. */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -47,7 +49,7 @@ export async function PATCH(
     }
 
     const { count } = await prisma.document.updateMany({
-      where: { id: params.id, userId: session.user.id },
+      where: { id, userId: session.user.id },
       data: { title: title.trim() },
     });
     if (count === 0) {
@@ -64,16 +66,17 @@ export async function PATCH(
 /** Delete a document (quiz results keep existing — documentId is set null). */
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const { count } = await prisma.document.deleteMany({
-      where: { id: params.id, userId: session.user.id },
+      where: { id, userId: session.user.id },
     });
     if (count === 0) {
       return NextResponse.json({ message: 'Document not found' }, { status: 404 });

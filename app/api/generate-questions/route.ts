@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized — please sign in' },
         { status: 401 }
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit: 10 generations per 10 minutes per user (these are expensive)
-    const userId = session.user.id || session.user.email || 'anon';
+    const userId = session.user.id;
     const rl = checkRateLimit(`generate:${userId}`, 10, 10 * 60 * 1000);
     if (!rl.success) {
       return NextResponse.json(

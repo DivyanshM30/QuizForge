@@ -3,6 +3,11 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import {
+  canUseGoogleIdentity,
+  normalizeEmail,
+  resolveAuthSecret,
+} from "@/lib/auth-security"
 
 const googleEnabled = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
@@ -21,8 +26,10 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+        const email = normalizeEmail(credentials.email)
+        const user = await prisma.user.findFirst({
+          where: { email: { equals: email, mode: 'insensitive' } },
+          select: { id: true, email: true, name: true, password: true },
         })
 
         // user.password is null for OAuth-only accounts — they must sign in
@@ -58,21 +65,50 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     // Google sign-in: make sure a DB user exists (JWT sessions, no adapter).
-    signIn: async ({ user, account }) => {
+    signIn: async ({ user, account, profile }) => {
       if (account?.provider === "google") {
         if (!user.email) return false
-        await prisma.user.upsert({
-          where: { email: user.email },
-          update: { name: user.name ?? undefined },
-          create: { email: user.email, name: user.name ?? null },
+
+        const googleProfile = profile as { email_verified?: boolean; sub?: string } | undefined
+        if (googleProfile?.email_verified !== true || !googleProfile.sub) return false
+
+        const email = normalizeEmail(user.email)
+        const existingBySubject = await prisma.user.findUnique({
+          where: { googleSubject: googleProfile.sub },
+          select: { id: true, email: true, password: true, googleSubject: true },
         })
+        const existingUser = existingBySubject ?? await prisma.user.findFirst({
+          where: { email: { equals: email, mode: 'insensitive' } },
+          select: { id: true, email: true, password: true, googleSubject: true },
+        })
+
+        if (!canUseGoogleIdentity(existingUser, googleProfile.sub)) return false
+        if (existingBySubject && normalizeEmail(existingBySubject.email) !== email) return false
+
+        if (existingUser) {
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+              googleSubject: googleProfile.sub,
+              ...(user.name ? { name: user.name } : {}),
+            },
+          })
+        } else {
+          await prisma.user.create({
+            data: { email, name: user.name ?? null, googleSubject: googleProfile.sub },
+          })
+        }
+
+        user.email = email
       }
       return true
     },
     // Point token.sub at OUR user id (Google would otherwise leave its own sub).
     jwt: async ({ token, account }) => {
-      if (account?.provider === "google" && token.email) {
-        const dbUser = await prisma.user.findUnique({ where: { email: token.email } })
+      if (account?.provider === "google") {
+        const dbUser = await prisma.user.findUnique({
+          where: { googleSubject: account.providerAccountId },
+        })
         if (dbUser) token.sub = dbUser.id
       }
       return token
@@ -87,5 +123,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
-  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-for-development"
+  secret: resolveAuthSecret(process.env.NEXTAUTH_SECRET, process.env.NODE_ENV)
 }

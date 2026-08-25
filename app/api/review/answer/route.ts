@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
           stage: next.nextStage,
           dueAt: next.nextDueAt,
           reps: { increment: 1 },
-          lapses: correct ? undefined : { increment: 1 },
+          ...(correct ? {} : { lapses: { increment: 1 } }),
           lastResult: correct ? 'correct' : 'wrong',
         },
       });

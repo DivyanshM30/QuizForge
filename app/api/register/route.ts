@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { isValidEmail, normalizeEmail } from "@/lib/auth-security"
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,11 +16,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { name, email, password } = await req.json()
+    const { name, email: rawEmail, password } = await req.json()
 
-    if (!email || !password) {
+    if (typeof rawEmail !== 'string' || typeof password !== 'string') {
       return NextResponse.json(
         { message: "Missing email or password" },
+        { status: 400 }
+      )
+    }
+
+    const email = normalizeEmail(rawEmail)
+    if (!isValidEmail(email)) {
+      return NextResponse.json(
+        { message: "Please enter a valid email address" },
         { status: 400 }
       )
     }
@@ -32,8 +41,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
+    const existingUser = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
     })
 
     if (existingUser) {
@@ -47,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.create({
       data: {
-        name,
+        name: typeof name === 'string' && name.trim() ? name.trim() : null,
         email,
         password: hashedPassword,
       },

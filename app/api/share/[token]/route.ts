@@ -12,11 +12,12 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    const { token } = await params;
     const share = await prisma.shareLink.findUnique({
-      where: { token: params.token },
+      where: { token },
       include: {
         entries: { orderBy: [{ score: 'desc' }, { createdAt: 'asc' }], take: 20 },
       },
@@ -53,16 +54,17 @@ export async function GET(
 /** Owner revokes the link (kept in DB so the leaderboard isn't lost). */
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    const { token } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const { count } = await prisma.shareLink.updateMany({
-      where: { token: params.token, ownerId: session.user.id },
+      where: { token, ownerId: session.user.id },
       data: { revoked: true },
     });
     if (count === 0) {

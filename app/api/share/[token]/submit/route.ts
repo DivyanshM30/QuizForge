@@ -11,9 +11,10 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    const { token } = await params;
     // Public endpoint — rate limit by IP
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const rl = checkRateLimit(`share-submit:${ip}`, 10, 10 * 60 * 1000);
@@ -21,7 +22,7 @@ export async function POST(
       return NextResponse.json({ message: 'Too many submissions — try again later' }, { status: 429 });
     }
 
-    const share = await prisma.shareLink.findUnique({ where: { token: params.token } });
+    const share = await prisma.shareLink.findUnique({ where: { token } });
     if (!share || share.revoked) {
       return NextResponse.json({ message: 'This quiz link does not exist or was revoked' }, { status: 404 });
     }
