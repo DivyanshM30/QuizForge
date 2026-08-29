@@ -50,7 +50,7 @@ export function passwordResetEmailHtml(resetUrl: string): string {
       Reset password
     </a>
     <p style="color:#64748b;font-size:12px;line-height:1.6">
-      If you didn't request this, you can safely ignore this email — your
+      If you didn't request this, you can safely ignore this email - your
       password will not change.
     </p>
   </div>`;

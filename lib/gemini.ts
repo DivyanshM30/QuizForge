@@ -267,7 +267,7 @@ Correct answer: ${question.correctAnswer.toUpperCase()}) ${question.options[ques
 Student's answer: ${userAnswer ? `${userAnswer.toUpperCase()}) ${question.options[userAnswer as 'a' | 'b' | 'c' | 'd'] ?? ''}` : 'not answered'}
 Original explanation: ${question.explanation || 'none provided'}
 
-${context ? `SOURCE MATERIAL (from the student's own study document — ground your answer in this):\n${context}\n` : 'No source material available — answer from the question context only.'}
+${context ? `SOURCE MATERIAL (from the student's own study document - ground your answer in this):\n${context}\n` : 'No source material available - answer from the question context only.'}
 
 STUDENT'S FOLLOW-UP QUESTION:
 ${userQuery}

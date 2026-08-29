@@ -15,11 +15,11 @@ export async function POST(
 ) {
   try {
     const { token } = await params;
-    // Public endpoint — rate limit by IP
+    // Public endpoint - rate limit by IP
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const rl = checkRateLimit(`share-submit:${ip}`, 10, 10 * 60 * 1000);
     if (!rl.success) {
-      return NextResponse.json({ message: 'Too many submissions — try again later' }, { status: 429 });
+      return NextResponse.json({ message: 'Too many submissions - try again later' }, { status: 429 });
     }
 
     const share = await prisma.shareLink.findUnique({ where: { token } });

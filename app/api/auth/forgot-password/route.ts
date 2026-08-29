@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const rl = checkRateLimit(`forgot-password:${ip}`, 3, 15 * 60 * 1000);
     if (!rl.success) {
       return NextResponse.json(
-        { message: 'Too many requests — please try again later' },
+        { message: 'Too many requests - please try again later' },
         { status: 429 }
       );
     }
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
 
-    // Always answer 200 with the same body — no user enumeration.
+    // Always answer 200 with the same body - no user enumeration.
     if (!user) return genericOkResponse();
 
     const token = randomBytes(32).toString('hex');

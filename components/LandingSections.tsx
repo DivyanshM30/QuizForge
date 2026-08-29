@@ -9,7 +9,7 @@ const features = [
   {
     icon: <Upload size={22} />,
     title: 'Document Upload',
-    body: 'PDF or DOCX — drop your study material and we extract the content instantly.',
+    body: 'PDF or DOCX - drop your study material and we extract the content instantly.',
   },
   {
     icon: <Cpu size={22} />,
@@ -39,7 +39,7 @@ const features = [
   {
     icon: <Brain size={22} />,
     title: 'Smart Review',
-    body: 'Miss a question and it comes back on a spaced-repetition schedule — 1, 3, 7, 21 days — until you master it.',
+    body: 'Miss a question and it comes back on a spaced-repetition schedule - 1, 3, 7, 21 days - until you master it.',
   },
   {
     icon: <Gauge size={22} />,
@@ -49,7 +49,7 @@ const features = [
   {
     icon: <Flashlight size={22} />,
     title: 'Cram Mode',
-    body: 'One click builds a quiz from your missed questions and weakest topics — study exactly what you don’t know.',
+    body: 'One click builds a quiz from your missed questions and weakest topics - study exactly what you don’t know.',
   },
   {
     icon: <MessageCircle size={22} />,
@@ -59,7 +59,7 @@ const features = [
   {
     icon: <Share2 size={22} />,
     title: 'Challenge Friends',
-    body: 'Share a public quiz link with a live leaderboard — friends compete without needing an account.',
+    body: 'Share a public quiz link with a live leaderboard - friends compete without needing an account.',
   },
   {
     icon: <FolderOpen size={22} />,
@@ -187,9 +187,9 @@ export default function LandingSections() {
         </div>
 
         <p className="text-white/60 text-base leading-relaxed max-w-2xl mx-auto">
-          QuizForge started as a personal frustration — spending more time making flashcards than actually studying.
+          QuizForge started as a personal frustration - spending more time making flashcards than actually studying.
           The idea was simple: paste your notes, get an instant exam. Now it&apos;s a full platform that reads your documents,
-          understands the material, and generates exam-quality MCQs with explanations and analytics — so revision
+          understands the material, and generates exam-quality MCQs with explanations and analytics - so revision
           becomes active, not passive.
         </p>
 

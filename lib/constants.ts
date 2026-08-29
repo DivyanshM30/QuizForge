@@ -1,5 +1,5 @@
 /**
- * Quiz bounds — single source of truth for the UI (QuizConfig slider/options)
+ * Quiz bounds - single source of truth for the UI (QuizConfig slider/options)
  * and the server validator (generate-questions route). Keep these in sync so
  * the client and server can never silently disagree.
  */

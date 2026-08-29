@@ -236,7 +236,7 @@ export default function HeroSection() {
             } ${uploadState === 'error' ? 'ring-1 ring-red-500/40' : ''}`}
             role="button"
             tabIndex={0}
-            aria-label="Upload study material — PDF or DOCX"
+            aria-label="Upload study material - PDF or DOCX"
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
@@ -273,7 +273,7 @@ export default function HeroSection() {
               </button>
             )}
 
-            {/* Generate button — triggers API call */}
+            {/* Generate button - triggers API call */}
             <button
               aria-label="Generate quiz from file"
               disabled={isBusy}
@@ -304,7 +304,7 @@ export default function HeroSection() {
 
           {/* Subtitle */}
           <p className="text-white/70 text-sm leading-relaxed px-4">
-            Upload your study material — PDF or DOCX — and QuizForge
+            Upload your study material - PDF or DOCX - and QuizForge
             instantly crafts AI-powered MCQs, tracks your performance, and turns revision into
             results.
           </p>
@@ -352,7 +352,7 @@ export default function HeroSection() {
           href="https://divyanshm.dev"
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Portfolio — divyanshm.dev"
+          aria-label="Portfolio - divyanshm.dev"
           className="liquid-glass rounded-full p-4 text-white/80 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
         >
           <PortfolioIcon />

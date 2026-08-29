@@ -391,7 +391,7 @@ export default function DashboardPage() {
                       </p>
                       <p className="text-white/40 text-xs">
                         {review.dueCount > 0
-                          ? 'Spaced repetition of questions you missed — a few minutes locks them in'
+                          ? 'Spaced repetition of questions you missed - a few minutes locks them in'
                           : 'Missed questions come back on a 1 → 3 → 7 → 21 day schedule'}
                       </p>
                     </div>
@@ -428,7 +428,7 @@ export default function DashboardPage() {
                   <div>
                     <p className="text-white font-medium text-sm">Well calibrated</p>
                     <p className="text-white/40 text-xs">
-                      No confidently-wrong answers yet — when you&apos;re sure, you&apos;re right
+                      No confidently-wrong answers yet - when you&apos;re sure, you&apos;re right
                     </p>
                   </div>
                 </div>
@@ -440,7 +440,7 @@ export default function DashboardPage() {
                     </span>
                     <div>
                       <p className="text-white font-medium text-sm">
-                        {confidentlyWrong} {confidentlyWrong === 1 ? 'answer' : 'answers'} you were sure about — and got wrong
+                        {confidentlyWrong} {confidentlyWrong === 1 ? 'answer' : 'answers'} you were sure about - and got wrong
                       </p>
                       <p className="text-white/40 text-xs">
                         These are your most dangerous gaps: you don&apos;t know that you don&apos;t know them
@@ -483,7 +483,7 @@ export default function DashboardPage() {
                   <div className="min-w-0">
                     <p className="text-white font-medium text-sm">Cram your weak spots</p>
                     <p className="text-white/40 text-xs">
-                      A quiz built only from questions you missed and topics under 60% — study exactly what you don&apos;t know
+                      A quiz built only from questions you missed and topics under 60% - study exactly what you don&apos;t know
                     </p>
                   </div>
                 </div>
@@ -534,7 +534,7 @@ export default function DashboardPage() {
             } ${uploadState === 'error' ? 'ring-1 ring-red-500/40' : ''}`}
             role="button"
             tabIndex={0}
-            aria-label="Upload study material — PDF or DOCX"
+            aria-label="Upload study material - PDF or DOCX"
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}

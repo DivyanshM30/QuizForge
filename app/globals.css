@@ -187,7 +187,7 @@ textarea:focus-visible,
 }
 
 /* ─── Liquid Glass Card (continuous glowing border) ─────── */
-/* Same glow as liquid-glass but border never breaks —       */
+/* Same glow as liquid-glass but border never breaks -       */
 /* gradient stays visible all the way around the perimeter.  */
 .liquid-glass-card {
   background: rgba(255, 255, 255, 0.01);

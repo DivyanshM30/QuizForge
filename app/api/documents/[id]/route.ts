@@ -63,7 +63,7 @@ export async function PATCH(
   }
 }
 
-/** Delete a document (quiz results keep existing — documentId is set null). */
+/** Delete a document (quiz results keep existing - documentId is set null). */
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -9,7 +9,7 @@ interface IconProps {
   className?: string;
 }
 
-/** QuizForge brand mark — used in the hero nav (24) and AppNav (22). */
+/** QuizForge brand mark - used in the hero nav (24) and AppNav (22). */
 export function QuizForgeLogo({ size = 24, className = 'text-white' }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>

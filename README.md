@@ -1,4 +1,4 @@
-# QuizForge — AI-Powered MCQ Generator
+# QuizForge - AI-Powered MCQ Generator
 
 > Upload any study material and QuizForge instantly crafts AI-powered MCQs, tracks your performance, and turns revision into results.
 
@@ -10,37 +10,37 @@
 
 | | Feature | Description |
 |---|---|---|
-| 📄 | **Document Upload** | PDF and DOCX — drag-and-drop or browse from the hero |
+| 📄 | **Document Upload** | PDF and DOCX - drag-and-drop or browse from the hero |
 | 🤖 | **Gemini AI Questions** | Google Gemini 2.5 Flash generates exam-quality MCQs with explanations |
 | ⚙️ | **Configurable Quiz** | Choose difficulty (easy / medium / hard / mixed), question count (5–50), and time limit (5–120 min) |
 | ⏱️ | **Timed Sessions** | Live countdown with warning states; time-up auto-submits the quiz |
 | 📊 | **Instant Analytics** | Topic-wise bar chart, accuracy score, weak areas, and revision suggestions |
-| 📚 | **Full History** | Every attempt saved to PostgreSQL — revisit and delete any past result |
+| 📚 | **Full History** | Every attempt saved to PostgreSQL - revisit and delete any past result |
 | 🔒 | **Auth** | Email/password auth via NextAuth.js + bcryptjs |
 | 🎬 | **Cinematic UI** | Full-screen looping video hero, liquid-glass design system, dark cinematic aesthetic |
-| ⚡ | **Hero Mini-Upload** | Drop a file right on the landing page — jumps straight to quiz config |
-| 🧠 | **Smart Review** | Missed questions return on a spaced-repetition schedule (1 → 3 → 7 → 21 days) until mastered — on by default, manageable in Settings |
-| 🎯 | **Confidence Calibration** | Rate answers Sure/Unsure; the dashboard surfaces "dangerous gaps" — questions you were confidently wrong about — and they resurface sooner in review |
-| 📁 | **Document Library** | Uploads are saved (20 most recent) — generate new quizzes without re-uploading |
+| ⚡ | **Hero Mini-Upload** | Drop a file right on the landing page - jumps straight to quiz config |
+| 🧠 | **Smart Review** | Missed questions return on a spaced-repetition schedule (1 → 3 → 7 → 21 days) until mastered - on by default, manageable in Settings |
+| 🎯 | **Confidence Calibration** | Rate answers Sure/Unsure; the dashboard surfaces "dangerous gaps" - questions you were confidently wrong about - and they resurface sooner in review |
+| 📁 | **Document Library** | Uploads are saved (20 most recent) - generate new quizzes without re-uploading |
 | 🔁 | **Retake Quiz** | Re-attempt any past quiz with shuffled questions and options |
 | 🔑 | **Google Sign-In & Password Reset** | OAuth via Google plus a full email-based password recovery flow |
 | ⚙️ | **Account Settings** | Profile, password change, study preferences, and account deletion |
 | 🔦 | **Cram Mode** | One-click quiz built from your missed questions and topics under 60% accuracy |
 | 💬 | **Ask the AI** | Follow-up explanations in the feedback modal, grounded in your own uploaded document |
-| 🔗 | **Shareable Quizzes** | Public challenge links with a server-graded leaderboard — no account needed to play |
+| 🔗 | **Shareable Quizzes** | Public challenge links with a server-graded leaderboard - no account needed to play |
 
 ---
 
 ## 🖥️ Tech Stack
 
 - **Next.js 16** (App Router) · **TypeScript** · **Tailwind CSS**
-- **Google Gemini API** (gemini-2.5-flash) — AI question generation
-- **NextAuth.js** — session management
-- **Prisma ORM** + **PostgreSQL** (Neon / Supabase) — persistent storage
-- **Zustand** — client-side state
-- **Recharts** — performance charts
-- **React Dropzone** — file upload UX
-- **bcryptjs** — password hashing
+- **Google Gemini API** (gemini-2.5-flash) - AI question generation
+- **NextAuth.js** - session management
+- **Prisma ORM** + **PostgreSQL** (Neon / Supabase) - persistent storage
+- **Zustand** - client-side state
+- **Recharts** - performance charts
+- **React Dropzone** - file upload UX
+- **bcryptjs** - password hashing
 
 ---
 
@@ -50,7 +50,7 @@
 
 - Node.js 18+
 - Google Gemini API Key ([get one](https://makersuite.google.com/app/apikey))
-- PostgreSQL database (e.g., [Neon](https://neon.tech) or [Supabase](https://supabase.com) — free tiers work)
+- PostgreSQL database (e.g., [Neon](https://neon.tech) or [Supabase](https://supabase.com) - free tiers work)
 
 ### 1. Clone & Install
 
@@ -158,7 +158,7 @@ quizforge/
 │   ├── prisma.ts                 # Prisma client singleton
 │   └── quiz-utils.ts             # Score calculation, formatTime, etc.
 ├── store/
-│   └── quiz-store.ts             # Zustand store — quiz session state
+│   └── quiz-store.ts             # Zustand store - quiz session state
 └── prisma/
     └── schema.prisma
 ```
@@ -193,7 +193,7 @@ quizforge/
 |---|---|
 | **Database tables missing** | Run `npx prisma db push` |
 | **Gemini quota errors** | Check API key quota at [ai.google.dev](https://ai.google.dev); reduce question count |
-| **Video not playing** | Browser autoplay policies — the video is muted and `playsInline`, should work everywhere |
+| **Video not playing** | Browser autoplay policies - the video is muted and `playsInline`, should work everywhere |
 | **File parse fails** | Ensure file is ≤ 10 MB and in a supported format (PDF, DOCX) |
 | **Auth not working** | Confirm `NEXTAUTH_SECRET` and `NEXTAUTH_URL` are set correctly |
 
@@ -201,7 +201,7 @@ quizforge/
 
 ## 📜 License
 
-MIT — free to use, modify, and distribute.
+MIT - free to use, modify, and distribute.
 
 ---
 

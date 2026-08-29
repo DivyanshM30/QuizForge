@@ -119,7 +119,7 @@ export default function DocumentsPage() {
             Your documents
           </h1>
           <p className="text-white/50 text-sm">
-            Generate new quizzes without re-uploading — your 20 most recent uploads are kept
+            Generate new quizzes without re-uploading - your 20 most recent uploads are kept
           </p>
         </div>
 

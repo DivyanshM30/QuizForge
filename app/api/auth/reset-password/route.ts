@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const rl = checkRateLimit(`reset-password:${ip}`, 5, 15 * 60 * 1000);
     if (!rl.success) {
       return NextResponse.json(
-        { message: 'Too many attempts — please try again later' },
+        { message: 'Too many attempts - please try again later' },
         { status: 429 }
       );
     }
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       prisma.passwordResetToken.deleteMany({ where: { userId: record.userId } }),
     ]);
 
-    return NextResponse.json({ message: 'Password updated — you can now sign in.' });
+    return NextResponse.json({ message: 'Password updated - you can now sign in.' });
   } catch (error) {
     console.error('Reset-password error:', error);
     return NextResponse.json(

@@ -42,7 +42,7 @@ export default function QuizDetailPage() {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2500);
     } catch {
-      // clipboard or network failure — button state simply resets
+      // clipboard or network failure - button state simply resets
     } finally {
       setShareBusy(false);
     }

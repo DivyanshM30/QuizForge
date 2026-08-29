@@ -32,7 +32,7 @@ export const authOptions: NextAuthOptions = {
           select: { id: true, email: true, name: true, password: true },
         })
 
-        // user.password is null for OAuth-only accounts — they must sign in
+        // user.password is null for OAuth-only accounts - they must sign in
         // with their provider (or set a password via the reset flow).
         if (!user || !user.password) {
           return null

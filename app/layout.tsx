@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'QuizForge AI',
-    title: 'QuizForge AI — Study smarter, not harder',
+    title: 'QuizForge AI - Study smarter, not harder',
     description:
       'Upload your study material and get AI-powered MCQs, timed quizzes, and performance analytics.',
     url: '/',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary',
-    title: 'QuizForge AI — Study smarter, not harder',
+    title: 'QuizForge AI - Study smarter, not harder',
     description:
       'Upload your study material and get AI-powered MCQs, timed quizzes, and performance analytics.',
     images: ['/icon.png'],
