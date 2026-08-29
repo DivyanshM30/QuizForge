@@ -143,8 +143,8 @@ export default function SettingsPage() {
       setBanner({
         kind: 'success',
         text: next
-          ? 'Spaced repetition enabled — missed questions will now enter your review queue'
-          : 'Spaced repetition disabled — your existing queue is kept but paused',
+          ? 'Spaced repetition enabled - missed questions will now enter your review queue'
+          : 'Spaced repetition disabled - your existing queue is kept but paused',
       });
     } catch (err) {
       setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Failed to update preference' });
@@ -169,7 +169,7 @@ export default function SettingsPage() {
       setBanner({
         kind: 'success',
         text: next
-          ? 'Confidence tracking enabled — you can rate Sure/Unsure before each answer'
+          ? 'Confidence tracking enabled - you can rate Sure/Unsure before each answer'
           : 'Confidence tracking disabled',
       });
     } catch (err) {
@@ -360,8 +360,8 @@ export default function SettingsPage() {
               <p className="text-white text-sm font-medium">Confidence tracking</p>
               <p className="text-white/50 text-sm leading-relaxed">
                 Rate each answer Sure or Unsure before submitting. Your dashboard
-                gains a calibration view showing where you&apos;re confidently wrong —
-                the most dangerous knowledge gaps — and those questions come back
+                gains a calibration view showing where you&apos;re confidently wrong -
+                the most dangerous knowledge gaps - and those questions come back
                 for review sooner.
               </p>
             </div>

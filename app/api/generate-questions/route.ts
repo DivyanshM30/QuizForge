@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized — please sign in' },
+        { error: 'Unauthorized - please sign in' },
         { status: 401 }
       );
     }
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const rl = checkRateLimit(`generate:${userId}`, 10, 10 * 60 * 1000);
     if (!rl.success) {
       return NextResponse.json(
-        { error: 'Too many requests — please try again later' },
+        { error: 'Too many requests - please try again later' },
         { status: 429 }
       );
     }

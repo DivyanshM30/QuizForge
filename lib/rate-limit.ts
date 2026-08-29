@@ -2,7 +2,7 @@
  * Simple in-memory rate limiter.
  *
  * NOTE: This is per-instance (resets on redeploy / cold start) which is fine
- * for Vercel serverless — it still protects against rapid-fire abuse within a
+ * for Vercel serverless - it still protects against rapid-fire abuse within a
  * single warm instance. For stricter limits, swap in a Redis-backed solution.
  */
 

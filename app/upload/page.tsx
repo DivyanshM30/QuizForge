@@ -74,8 +74,8 @@ function GeneratingStatus() {
     elapsed < 7
       ? 'Generating questions with AI… this may take a moment.'
       : elapsed < 14
-      ? 'Still working — analyzing your material and crafting questions…'
-      : 'The AI service is busy right now — retrying for you. Hang tight…';
+      ? 'Still working - analyzing your material and crafting questions…'
+      : 'The AI service is busy right now - retrying for you. Hang tight…';
   return <LoadingSpinner message={message} />;
 }
 
@@ -148,7 +148,7 @@ export default function UploadPage() {
       }
       const data = await response.json();
       setQuestions(data.questions);
-      hasSavedRef.current = false; // fresh quiz — allow exactly one save
+      hasSavedRef.current = false; // fresh quiz - allow exactly one save
       startQuiz(data.questions, config);
       setStep('quiz');
     } catch (err) {
@@ -156,7 +156,7 @@ export default function UploadPage() {
       const message = (err as { message?: string })?.message ?? '';
       setError(
         name === 'AbortError'
-          ? 'Generation is taking too long — the AI service may be busy. Please try again in a moment.'
+          ? 'Generation is taking too long - the AI service may be busy. Please try again in a moment.'
           : friendlyError(message)
       );
     } finally {
@@ -166,7 +166,7 @@ export default function UploadPage() {
   };
 
   const handleQuizComplete = async () => {
-    // Run exactly once per quiz — both the time-up path and the manual
+    // Run exactly once per quiz - both the time-up path and the manual
     // "finish" path funnel here, and we must not POST a duplicate result.
     if (hasSavedRef.current || !session) return;
     hasSavedRef.current = true;
@@ -247,7 +247,7 @@ export default function UploadPage() {
                 Upload your material
               </h1>
               <p className="text-white/50 text-sm">
-                PDF or DOCX — we&apos;ll extract the content and forge your quiz
+                PDF or DOCX - we&apos;ll extract the content and forge your quiz
               </p>
             </div>
             <FileUpload

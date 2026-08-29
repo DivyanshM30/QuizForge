@@ -2,11 +2,11 @@ import { createHash } from 'crypto';
 import type { Question } from './types';
 
 /**
- * Smart Review — SM-2-lite scheduling for quiz questions.
+ * Smart Review - SM-2-lite scheduling for quiz questions.
  *
  * Interval ladder (days). A correct answer climbs one rung; a wrong answer
  * falls back to the start. Answering correctly at the top rung "graduates"
- * (retires) the item — the question is considered learned.
+ * (retires) the item - the question is considered learned.
  */
 export const REVIEW_INTERVALS_DAYS = [1, 3, 7, 21] as const;
 
@@ -32,7 +32,7 @@ export interface ScheduleResult {
   nextDueAt: Date;
 }
 
-/** Confidently-wrong is the most dangerous kind of wrong — resurface it sooner. */
+/** Confidently-wrong is the most dangerous kind of wrong - resurface it sooner. */
 export function dueDateForWrong(confidence: Confidence, from: Date = new Date()): Date {
   const hours = confidence === 'sure' ? 12 : 24;
   return new Date(from.getTime() + hours * 60 * 60 * 1000);

@@ -69,7 +69,7 @@ model ShareEntry {
 model ReviewItem {
   id           String   @id @default(cuid())
   userId       String
-  questionHash String   // sha256 of normalized question text — dedupes across quizzes
+  questionHash String   // sha256 of normalized question text - dedupes across quizzes
   question     String   // JSON snapshot of the Question
   topic        String
   stage        Int      @default(0) // index into the interval ladder

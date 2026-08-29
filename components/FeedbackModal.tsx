@@ -125,7 +125,7 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
               {isCorrect ? 'Correct!' : 'Incorrect'}
             </h3>
             <p className="text-white/40 text-sm">
-              {isCorrect ? 'Great job — keep it up.' : `Correct answer: ${question.correctAnswer.toUpperCase()}`}
+              {isCorrect ? 'Great job - keep it up.' : `Correct answer: ${question.correctAnswer.toUpperCase()}`}
             </p>
           </div>
         </div>

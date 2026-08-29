@@ -78,7 +78,7 @@ export default function PublicQuizPage() {
       return;
     }
 
-    // Last question — submit for server-side grading
+    // Last question - submit for server-side grading
     setSubmitting(true);
     setError(null);
     try {
@@ -257,7 +257,7 @@ export default function PublicQuizPage() {
                 href="/register"
                 className="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm mt-2"
               >
-                Make your own quiz — free
+                Make your own quiz - free
               </Link>
             </div>
 
@@ -273,8 +273,8 @@ export default function PublicQuizPage() {
                   </p>
                   <p className={`text-xs ${r.correct ? 'text-green-400' : 'text-red-400'}`}>
                     {r.correct
-                      ? `✓ Correct — ${r.correctAnswer.toUpperCase()}) ${r.options[r.correctAnswer]}`
-                      : `✗ You picked ${r.yourAnswer ? `${r.yourAnswer.toUpperCase()}) ${r.options[r.yourAnswer as 'a' | 'b' | 'c' | 'd']}` : 'nothing'} — correct: ${r.correctAnswer.toUpperCase()}) ${r.options[r.correctAnswer]}`}
+                      ? `✓ Correct - ${r.correctAnswer.toUpperCase()}) ${r.options[r.correctAnswer]}`
+                      : `✗ You picked ${r.yourAnswer ? `${r.yourAnswer.toUpperCase()}) ${r.options[r.yourAnswer as 'a' | 'b' | 'c' | 'd']}` : 'nothing'} - correct: ${r.correctAnswer.toUpperCase()}) ${r.options[r.correctAnswer]}`}
                   </p>
                   {r.explanation && (
                     <p className="text-white/50 text-xs leading-relaxed">{r.explanation}</p>

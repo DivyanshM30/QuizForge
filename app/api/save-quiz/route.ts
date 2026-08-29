@@ -87,7 +87,7 @@ export async function POST(req: Request) {
           const dueAt = dueDateForWrong(confidence)
           await prisma.reviewItem.upsert({
             where: { userId_questionHash: { userId, questionHash: hash } },
-            // Seen wrong again — pull it back to the start of the ladder.
+            // Seen wrong again - pull it back to the start of the ladder.
             update: { stage: 0, dueAt, lastResult: 'wrong' },
             create: {
               userId,

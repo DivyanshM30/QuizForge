@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-/** List the user's document library (metadata only — no full text). */
+/** List the user's document library (metadata only - no full text). */
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);

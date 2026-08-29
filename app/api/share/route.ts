@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const rl = checkRateLimit(`share:${userId}`, 10, 10 * 60 * 1000);
     if (!rl.success) {
-      return NextResponse.json({ message: 'Too many requests — try again later' }, { status: 429 });
+      return NextResponse.json({ message: 'Too many requests - try again later' }, { status: 429 });
     }
 
     const { resultId } = await req.json();

@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     const rl = checkRateLimit(`cram:${userId}`, 10, 10 * 60 * 1000);
     if (!rl.success) {
-      return NextResponse.json({ message: 'Too many requests — please try again later' }, { status: 429 });
+      return NextResponse.json({ message: 'Too many requests - please try again later' }, { status: 429 });
     }
 
     const countParam = Number(req.nextUrl.searchParams.get('count')) || 10;
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 
     if (results.length === 0) {
       return NextResponse.json(
-        { message: 'Take a few quizzes first — Cram Mode studies your past mistakes' },
+        { message: 'Take a few quizzes first - Cram Mode studies your past mistakes' },
         { status: 400 }
       );
     }
@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
 
     if (picked.length < MIN_POOL) {
       return NextResponse.json(
-        { message: 'Not enough weak spots found yet — nice work! Take more quizzes to feed Cram Mode.' },
+        { message: 'Not enough weak spots found yet - nice work! Take more quizzes to feed Cram Mode.' },
         { status: 400 }
       );
     }

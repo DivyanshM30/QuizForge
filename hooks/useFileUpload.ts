@@ -21,7 +21,7 @@ interface UseFileUploadOptions {
  * the quiz config step. Previously this ~90-line state machine was duplicated
  * verbatim across HeroSection and the dashboard.
  *
- * Presentation (the pill markup) stays in each consumer — only the logic is shared.
+ * Presentation (the pill markup) stays in each consumer - only the logic is shared.
  */
 export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
   const router = useRouter();
@@ -100,7 +100,7 @@ export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
     if (selectedFileRef.current) {
       processFile(selectedFileRef.current);
     } else {
-      // No file selected yet — open the picker
+      // No file selected yet - open the picker
       fileInputRef.current?.click();
     }
   }, [isBusy, uploadState, processFile]);
@@ -138,7 +138,7 @@ export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
   const pillLabel = () => {
     if (uploadState === 'uploading') return 'Uploading…';
     if (uploadState === 'analyzing') return 'Reading document…';
-    if (uploadState === 'error') return uploadError ?? 'Upload failed — click Generate to retry';
+    if (uploadState === 'error') return uploadError ?? 'Upload failed - click Generate to retry';
     return fileName ?? 'Drop your PDF, DOCX, or click to browse…';
   };
 

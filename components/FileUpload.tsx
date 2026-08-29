@@ -102,7 +102,7 @@ export default function FileUpload({ onFileUploaded, onAnalysisComplete, isAnaly
                 : 'Drag & drop your study material'}
             </p>
             <p className="text-white/40 text-sm">
-              {fileName ? 'Click to choose a different file' : 'or click to browse — PDF, DOCX · Max 10 MB'}
+              {fileName ? 'Click to choose a different file' : 'or click to browse - PDF, DOCX · Max 10 MB'}
             </p>
           </div>
         </div>

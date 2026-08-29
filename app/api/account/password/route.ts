@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const rl = checkRateLimit(`change-password:${session.user.id}`, 5, 15 * 60 * 1000);
     if (!rl.success) {
       return NextResponse.json(
-        { message: 'Too many attempts — please try again later' },
+        { message: 'Too many attempts - please try again later' },
         { status: 429 }
       );
     }

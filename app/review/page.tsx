@@ -308,9 +308,9 @@ export default function ReviewPage() {
                     <p className={`text-sm font-semibold ${feedback.correct ? 'text-green-400' : 'text-red-400'}`}>
                       {feedback.correct
                         ? feedback.graduated
-                          ? 'Correct — mastered! This one is retired from review. 🎉'
-                          : `Correct — next review in ${feedback.nextInDays} ${feedback.nextInDays === 1 ? 'day' : 'days'}`
-                        : 'Incorrect — back to the start of the ladder, due again tomorrow'}
+                          ? 'Correct - mastered! This one is retired from review. 🎉'
+                          : `Correct - next review in ${feedback.nextInDays} ${feedback.nextInDays === 1 ? 'day' : 'days'}`
+                        : 'Incorrect - back to the start of the ladder, due again tomorrow'}
                     </p>
                     {feedback.explanation && (
                       <p className="text-white/60 text-sm leading-relaxed">{feedback.explanation}</p>

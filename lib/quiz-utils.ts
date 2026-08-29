@@ -119,7 +119,7 @@ export function getErrorMessage(err: unknown, fallback = 'Something went wrong')
   return err instanceof Error ? err.message : typeof err === 'string' ? err : fallback;
 }
 
-/** Bar fill colour (hex) for a percentage — for recharts <Cell fill>. */
+/** Bar fill colour (hex) for a percentage - for recharts <Cell fill>. */
 export function barColorForPct(pct: number): string {
   return pct >= 80 ? '#4ade80' : pct >= 60 ? '#facc15' : '#f87171';
 }
