@@ -195,7 +195,7 @@ export default function LandingSections() {
 
         <p className="text-white/55 text-sm leading-relaxed">
           Powered by <span className="text-white/60">Google Gemini AI</span> · Built with{' '}
-          <span className="text-white/60">Next.js 14</span> ·{' '}
+          <span className="text-white/60">Next.js 16</span> ·{' '}
           <span className="text-white/60">TypeScript</span> ·{' '}
           <span className="text-white/60">Tailwind CSS</span>
         </p>
@@ -225,18 +225,6 @@ export default function LandingSections() {
         </div>
       </section>
 
-      {/* ── Footer ───────────────────────────────────────────── */}
-      <footer className="border-t border-white/[0.06] px-6 py-8">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-white/55 text-xs">
-          <span>© {new Date().getFullYear()} QuizForge · All rights reserved</span>
-          <div className="flex items-center gap-6">
-            <Link href="#features" className="hover:text-white transition-colors">Features</Link>
-            <Link href="#how-it-works" className="hover:text-white transition-colors">How it works</Link>
-            <Link href="#about" className="hover:text-white transition-colors">About</Link>
-            <Link href="/login" className="hover:text-white transition-colors">Sign in</Link>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

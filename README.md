@@ -33,7 +33,7 @@
 
 ## 🖥️ Tech Stack
 
-- **Next.js 14** (App Router) · **TypeScript** · **Tailwind CSS**
+- **Next.js 16** (App Router) · **TypeScript** · **Tailwind CSS**
 - **Google Gemini API** (gemini-2.5-flash) — AI question generation
 - **NextAuth.js** — session management
 - **Prisma ORM** + **PostgreSQL** (Neon / Supabase) — persistent storage
