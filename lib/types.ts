@@ -31,6 +31,7 @@ export interface QuizSession {
   startTime: number;
   timeLimit: number; // in seconds
   config: QuizConfig;
+  quizProof: string;
 }
 
 export interface QuizResult {

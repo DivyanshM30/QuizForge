@@ -84,6 +84,26 @@ export function generateRevisionSuggestions(
   return suggestions;
 }
 
+export function deriveQuizMetrics(
+  questions: Question[],
+  userAnswers: (string | null)[]
+) {
+  const score = calculateScore(questions, userAnswers);
+  const accuracy = calculateAccuracy(score, questions.length);
+  const topicPerformance = analyzeTopicPerformance(questions, userAnswers);
+  const weakTopics = identifyWeakTopics(topicPerformance);
+  const revisionSuggestions = generateRevisionSuggestions(weakTopics, topicPerformance);
+
+  return {
+    score,
+    totalQuestions: questions.length,
+    accuracy,
+    topicPerformance,
+    weakTopics,
+    revisionSuggestions,
+  };
+}
+
 /**
  * Shuffle questions for a retake: question order AND option positions are
  * randomized, with correctAnswer remapped to follow its option.
@@ -164,23 +184,14 @@ export function createQuizResult(
   config: QuizConfig,
   confidences: Confidence[] | null = null
 ): QuizResult {
-  const score = calculateScore(questions, userAnswers);
-  const accuracy = calculateAccuracy(score, questions.length);
-  const topicPerformance = analyzeTopicPerformance(questions, userAnswers);
-  const weakTopics = identifyWeakTopics(topicPerformance);
-  const revisionSuggestions = generateRevisionSuggestions(weakTopics, topicPerformance);
+  const metrics = deriveQuizMetrics(questions, userAnswers);
 
   return {
     id: `quiz-${Date.now()}`,
     timestamp: Date.now(),
-    score,
-    totalQuestions: questions.length,
-    accuracy,
+    ...metrics,
     timeTaken,
     timeLimit,
-    topicPerformance,
-    weakTopics,
-    revisionSuggestions,
     config,
     questions,
     userAnswers,

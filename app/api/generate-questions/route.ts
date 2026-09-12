@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateQuestions } from '@/lib/gemini';
-import { QuizConfig, Question } from '@/lib/types';
+import { Question } from '@/lib/types';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { QUIZ_LIMITS } from '@/lib/constants';
 import { getErrorMessage } from '@/lib/quiz-utils';
+import { createQuizProof } from '@/lib/quiz-proof';
+import { validateQuizConfig } from '@/lib/quiz-submission';
+import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -32,41 +34,41 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { documentText, config } = body;
+    const { documentText, documentId, config } = body;
 
-    if (!documentText || !config) {
+    if ((!documentText && !documentId) || !config) {
       return NextResponse.json(
-        { error: 'Missing required fields: documentText and config' },
+        { error: 'Missing required quiz source or configuration' },
         { status: 400 }
       );
     }
 
-    const quizConfig: QuizConfig = {
-      numQuestions: config.numQuestions || 10,
-      timeLimit: config.timeLimit || 15,
-      difficulty: config.difficulty || 'medium',
-    };
-
-    // Validate config
-    if (
-      quizConfig.numQuestions < QUIZ_LIMITS.MIN_QUESTIONS ||
-      quizConfig.numQuestions > QUIZ_LIMITS.MAX_QUESTIONS
-    ) {
-      return NextResponse.json(
-        { error: `Number of questions must be between ${QUIZ_LIMITS.MIN_QUESTIONS} and ${QUIZ_LIMITS.MAX_QUESTIONS}` },
-        { status: 400 }
-      );
+    let sourceText = documentText;
+    let linkedDocumentId: string | null = null;
+    if (documentId !== undefined && documentId !== null) {
+      if (typeof documentId !== 'string' || documentId.length === 0 || documentId.length > 200) {
+        return NextResponse.json({ error: 'Invalid document reference' }, { status: 400 });
+      }
+      const document = await prisma.document.findFirst({
+        where: { id: documentId, userId },
+        select: { id: true, text: true },
+      });
+      if (!document) {
+        return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+      }
+      sourceText = document.text;
+      linkedDocumentId = document.id;
     }
 
-    if (
-      quizConfig.timeLimit < QUIZ_LIMITS.MIN_TIME ||
-      quizConfig.timeLimit > QUIZ_LIMITS.MAX_TIME
-    ) {
-      return NextResponse.json(
-        { error: `Time limit must be between ${QUIZ_LIMITS.MIN_TIME} and ${QUIZ_LIMITS.MAX_TIME} minutes` },
-        { status: 400 }
-      );
+    if (typeof sourceText !== 'string' || sourceText.trim().length === 0) {
+      return NextResponse.json({ error: 'Quiz source is empty' }, { status: 400 });
     }
+
+    const parsedConfig = validateQuizConfig(config);
+    if (!parsedConfig.ok) {
+      return NextResponse.json({ error: parsedConfig.error }, { status: 400 });
+    }
+    const quizConfig = parsedConfig.value;
 
     // Generate questions with retry logic
     let questions: Question[] = [];
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     while (attempts < maxAttempts) {
       try {
-        questions = await generateQuestions(documentText, quizConfig);
+        questions = await generateQuestions(sourceText, quizConfig);
         break;
       } catch (error) {
         attempts++;
@@ -91,6 +93,8 @@ export async function POST(request: NextRequest) {
       success: true,
       questions,
       count: questions.length,
+      documentId: linkedDocumentId,
+      quizProof: createQuizProof(userId, questions, quizConfig, linkedDocumentId),
     });
   } catch (error) {
     console.error('Error generating questions:', error);

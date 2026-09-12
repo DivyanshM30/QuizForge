@@ -211,8 +211,10 @@ Format: [{"id":"q1","question":"...","options":{"a":"...","b":"...","c":"...","d
     .replace(/```\n?/g, '');
 
   const questions = sanitizeQuestions(JSON.parse(text));
-  if (questions.length === 0) {
-    throw new Error('The AI returned no usable questions. Please try again.');
+  if (questions.length < config.numQuestions) {
+    throw new Error(
+      `Generated only ${questions.length} valid questions, expected ${config.numQuestions}`
+    );
   }
   return questions.slice(0, config.numQuestions);
 }
@@ -281,4 +283,3 @@ Rules:
 
   return (await generateWithFallbackModels(prompt)).trim();
 }
-

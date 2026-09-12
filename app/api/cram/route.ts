@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { questionHash } from '@/lib/review';
+import { createQuizProof } from '@/lib/quiz-proof';
+import { shuffleQuestions } from '@/lib/quiz-utils';
 import type { Question } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -115,7 +117,20 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ questions: picked });
+    const questions = shuffleQuestions(picked);
+    const config = {
+      numQuestions: questions.length,
+      timeLimit: Math.max(5, Math.ceil(questions.length)),
+      difficulty: 'mixed' as const,
+      cram: true,
+    };
+
+    return NextResponse.json({
+      questions,
+      config,
+      documentId: null,
+      quizProof: createQuizProof(userId, questions, config, null),
+    });
   } catch (error) {
     console.error('Cram error:', error);
     return NextResponse.json({ message: 'Failed to build cram quiz' }, { status: 500 });
