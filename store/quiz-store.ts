@@ -15,7 +15,12 @@ interface QuizStore {
   setAnalyzing: (isAnalyzing: boolean) => void;
   setGenerating: (isGenerating: boolean) => void;
   setError: (error: string | null) => void;
-  startQuiz: (questions: Question[], config: QuizConfig) => void;
+  startQuiz: (
+    questions: Question[],
+    config: QuizConfig,
+    quizProof: string,
+    documentId?: string | null
+  ) => void;
   submitAnswer: (answer: string, confidence?: Confidence) => void;
   nextQuestion: () => void;
   endQuiz: () => void;
@@ -42,7 +47,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
 
   setError: (error: string | null) => set({ error }),
 
-  startQuiz: (questions: Question[], config: QuizConfig) => {
+  startQuiz: (questions: Question[], config: QuizConfig, quizProof: string, documentId = null) => {
     const timeLimitSeconds = config.timeLimit * 60;
     const session: QuizSession = {
       questions,
@@ -52,8 +57,9 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       startTime: Date.now(),
       timeLimit: timeLimitSeconds,
       config,
+      quizProof,
     };
-    set({ session, error: null });
+    set({ session, documentId, error: null });
   },
 
   submitAnswer: (answer: string, confidence: Confidence = null) => {

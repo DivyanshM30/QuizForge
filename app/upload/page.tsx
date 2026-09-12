@@ -139,7 +139,7 @@ export default function UploadPage() {
       const response = await fetch('/api/generate-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentText, config }),
+        body: JSON.stringify({ documentText, documentId, config }),
         signal: controller.signal,
       });
       if (!response.ok) {
@@ -149,7 +149,7 @@ export default function UploadPage() {
       const data = await response.json();
       setQuestions(data.questions);
       hasSavedRef.current = false; // fresh quiz - allow exactly one save
-      startQuiz(data.questions, config);
+      startQuiz(data.questions, config, data.quizProof, data.documentId);
       setStep('quiz');
     } catch (err) {
       const name = (err as { name?: string })?.name;
@@ -176,13 +176,22 @@ export default function UploadPage() {
       session.confidences
     );
     setResult(quizResult);
-    fetch('/api/save-quiz', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...quizResult, documentId }),
-    }).catch(console.error);
-    endQuiz();
-    setStep('results');
+    try {
+      const response = await fetch('/api/save-quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...quizResult, documentId, quizProof: session.quizProof }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to save quiz result');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save quiz result');
+    } finally {
+      endQuiz();
+      setStep('results');
+    }
   };
 
   const handleNewQuiz = () => {

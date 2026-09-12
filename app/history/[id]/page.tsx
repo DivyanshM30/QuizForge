@@ -7,9 +7,8 @@ import ResultsDashboard from '@/components/ResultsDashboard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import AppNav from '@/components/AppNav';
 import Link from 'next/link';
-import { ChevronLeft, Zap, RotateCcw, Share2, Check, Ban } from 'lucide-react';
+import { ChevronLeft, Zap, RotateCcw, Share2, Check, Ban, Loader2 } from 'lucide-react';
 import { useQuizStore } from '@/store/quiz-store';
-import { shuffleQuestions } from '@/lib/quiz-utils';
 
 export default function QuizDetailPage() {
   const params = useParams();
@@ -22,6 +21,8 @@ export default function QuizDetailPage() {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
+  const [retakeBusy, setRetakeBusy] = useState(false);
+  const [retakeError, setRetakeError] = useState<string | null>(null);
 
   const handleShare = async () => {
     setShareBusy(true);
@@ -57,10 +58,20 @@ export default function QuizDetailPage() {
   };
 
   /* Retake: same questions, freshly shuffled (order + option positions). */
-  const handleRetake = () => {
+  const handleRetake = async () => {
     if (!result) return;
-    startQuiz(shuffleQuestions(result.questions), result.config);
-    router.push('/upload?step=quiz');
+    setRetakeBusy(true);
+    setRetakeError(null);
+    try {
+      const response = await fetch(`/api/history/${params.id}`, { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to prepare retake');
+      startQuiz(data.questions, data.config, data.quizProof, data.documentId);
+      router.push('/upload?step=quiz');
+    } catch (error) {
+      setRetakeError(error instanceof Error ? error.message : 'Failed to prepare retake');
+      setRetakeBusy(false);
+    }
   };
 
   useEffect(() => {
@@ -149,12 +160,14 @@ export default function QuizDetailPage() {
             </button>
             <button
               onClick={handleRetake}
-              className="flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm cursor-pointer"
+              disabled={retakeBusy}
+              className="flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <RotateCcw size={15} />
-              Retake Quiz
+              {retakeBusy ? <Loader2 size={15} className="animate-spin" /> : <RotateCcw size={15} />}
+              {retakeBusy ? 'Preparing...' : 'Retake Quiz'}
             </button>
           </div>
+          {retakeError && <p className="mt-3 text-sm text-red-400">{retakeError}</p>}
         </div>
 
         <ResultsDashboard result={result} onRetake={() => router.push('/upload')} />

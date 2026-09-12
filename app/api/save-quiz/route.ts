@@ -3,7 +3,10 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { questionHash, dueDateForWrong, REVIEW_QUEUE_CAP } from "@/lib/review"
-import type { Question, Confidence } from "@/lib/types"
+import { deriveQuizMetrics } from "@/lib/quiz-utils"
+import { validateQuizSubmission } from "@/lib/quiz-submission"
+import { verifyQuizProof } from "@/lib/quiz-proof"
+import type { Confidence, Question } from "@/lib/types"
 
 export const dynamic = 'force-dynamic'
 
@@ -18,38 +21,52 @@ export async function POST(req: Request) {
       )
     }
 
-    const { 
-      score, 
-      totalQuestions, 
-      accuracy, 
-      timeTaken, 
-      timeLimit, 
-      config, 
-      topicPerformance, 
-      weakTopics, 
-      revisionSuggestions,
+    const submission = validateQuizSubmission(await req.json())
+    if (!submission.ok) {
+      return NextResponse.json({ message: submission.error }, { status: 400 })
+    }
+
+    const {
+      config,
       questions,
       userAnswers,
-      documentId,
       confidences,
-    } = await req.json()
+      quizProof,
+    } = submission.value
+
+    const proofClaims = verifyQuizProof(quizProof, session.user.id, questions, config)
+    if (!proofClaims) {
+      return NextResponse.json({ message: 'Quiz verification failed' }, { status: 400 })
+    }
+    const timeLimit = config.timeLimit * 60
+    const timeTaken = Math.min(
+      timeLimit,
+      Math.max(0, Math.floor((Date.now() - proofClaims.issuedAt) / 1000))
+    )
+    const {
+      score,
+      totalQuestions,
+      accuracy,
+      topicPerformance,
+      weakTopics,
+      revisionSuggestions,
+    } = deriveQuizMetrics(questions, userAnswers)
 
     const userId = session.user.id
 
-    // Only link a document the user actually owns.
-    let linkedDocumentId: string | null = null;
-    if (documentId && typeof documentId === 'string') {
-      const doc = await prisma.document.findFirst({
-        where: { id: documentId, userId },
-        select: { id: true },
-      });
-      linkedDocumentId = doc?.id ?? null;
-    }
+    const linkedDocument = proofClaims.documentId
+      ? await prisma.document.findFirst({
+          where: { id: proofClaims.documentId, userId },
+          select: { id: true },
+        })
+      : null
+    let documentId = linkedDocument?.id ?? null
 
-    const result = await prisma.quizResult.create({
+    const createResult = () => prisma.quizResult.create({
       data: {
+        id: proofClaims.attemptId,
         userId,
-        documentId: linkedDocumentId,
+        documentId,
         score,
         totalQuestions,
         accuracy,
@@ -61,9 +78,35 @@ export async function POST(req: Request) {
         revisionSuggestions: JSON.stringify(revisionSuggestions),
         questions: JSON.stringify(questions),
         userAnswers: JSON.stringify(userAnswers),
-        confidences: Array.isArray(confidences) ? JSON.stringify(confidences) : null,
+        confidences: confidences ? JSON.stringify(confidences) : null,
       },
     })
+
+    let result
+    try {
+      result = await createResult()
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2002'
+      ) {
+        return NextResponse.json({ message: 'Quiz result has already been saved' }, { status: 409 })
+      }
+      if (
+        documentId !== null &&
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2003'
+      ) {
+        documentId = null
+        result = await createResult()
+      } else {
+        throw error
+      }
+    }
 
     // ── Smart Review: enqueue every missed question (best-effort, opt-in) ──
     try {
@@ -71,12 +114,12 @@ export async function POST(req: Request) {
         where: { id: userId },
         select: { reviewEnabled: true },
       })
-      const confArr: Confidence[] = Array.isArray(confidences) ? confidences : []
+      const confArr: Confidence[] = confidences ?? []
       const missed: { q: Question; confidence: Confidence }[] = !prefs?.reviewEnabled
         ? []
-        : (questions as Question[])
+        : questions
             .map((q, i) => ({ q, i }))
-            .filter(({ q, i }) => (userAnswers as (string | null)[])[i] !== q.correctAnswer)
+            .filter(({ q, i }) => userAnswers[i] !== q.correctAnswer)
             .map(({ q, i }) => ({ q, confidence: confArr[i] ?? null }))
       if (missed.length > 0) {
         const current = await prisma.reviewItem.count({ where: { userId } })

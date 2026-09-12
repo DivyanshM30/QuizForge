@@ -9,7 +9,7 @@ import {
   Upload, Sparkles, X, Loader2, FileText, Flame, Brain, CheckCircle2, AlertTriangle, Flashlight,
 } from 'lucide-react';
 import Link from 'next/link';
-import { formatTime, accuracyTextClass, shuffleQuestions } from '@/lib/quiz-utils';
+import { formatTime, accuracyTextClass } from '@/lib/quiz-utils';
 import { useQuizStore } from '@/store/quiz-store';
 import { useHistory } from '@/hooks/useHistory';
 import { useFileUpload } from '@/hooks/useFileUpload';
@@ -120,13 +120,7 @@ export default function DashboardPage() {
       const res = await fetch(`/api/cram?count=${cramCount}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to build cram quiz');
-      const questions = shuffleQuestions(data.questions);
-      startQuiz(questions, {
-        numQuestions: questions.length,
-        timeLimit: Math.max(5, Math.ceil(questions.length * 1)),
-        difficulty: 'mixed',
-        cram: true,
-      });
+      startQuiz(data.questions, data.config, data.quizProof, data.documentId);
       router.push('/upload?step=quiz');
     } catch (err) {
       setCramError(err instanceof Error ? err.message : 'Failed to build cram quiz');
