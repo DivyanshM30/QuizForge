@@ -52,3 +52,8 @@ quizforge_redesign_prompt.md
 FEATURES_ROADMAP.md
 PR_DESCRIPTION.md
 QuizForge_Interview_Dossier.md
+
+# Local audits and planning notes (keep future notes in docs/local/)
+/docs/CODE_AUDIT.md
+/docs/IMPROVEMENT_PLAN.md
+/docs/local/
