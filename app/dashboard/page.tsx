@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -61,11 +61,11 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const { history, isLoading } = useHistory({ enabled: status === 'authenticated' });
+  const { history, analytics, isLoading, error: historyError, refetch } = useHistory({ enabled: status === 'authenticated', dashboard: true });
 
   const {
     fileInputRef,
-    selectedFileRef,
+    selectedFile,
     fileName,
     isDragging,
     uploadState,
@@ -142,101 +142,31 @@ export default function DashboardPage() {
     }
   };
 
-  /* ── Analytics computation (memoized; only recomputes when history changes) ── */
   const {
     totalQuizzes, avgScore, topScore, totalQuestions, totalCorrect,
     avgTime, streak, performanceData, topicAggregated,
     confidentlyWrong, confidenceRated, calibrationTopics,
-  } = useMemo(() => {
-    const totalQuizzes = history.length;
-    const avgScore = totalQuizzes > 0
-      ? Math.round(history.reduce((sum, q) => sum + q.accuracy, 0) / totalQuizzes)
-      : 0;
-    const topScore = totalQuizzes > 0
-      ? Math.max(...history.map(q => q.accuracy))
-      : 0;
-    const totalQuestions = history.reduce((sum, q) => sum + q.totalQuestions, 0);
-    const totalCorrect = history.reduce((sum, q) => sum + q.score, 0);
-    const avgTime = totalQuizzes > 0
-      ? Math.round(history.reduce((sum, q) => sum + q.timeTaken, 0) / totalQuizzes)
-      : 0;
-
-    /* streak: consecutive quizzes with accuracy >= 60 (most recent first) */
-    let streak = 0;
-    for (const q of history) {
-      if (q.accuracy >= 60) streak++;
-      else break;
-    }
-
-    /* Performance over time (last 10 quizzes, chronological) */
-    const performanceData = [...history]
-      .reverse()
-      .slice(-10)
-      .map((q, i) => ({
-        quiz: `#${i + 1}`,
-        accuracy: q.accuracy,
-        score: q.score,
-        total: q.totalQuestions,
-      }));
-
-    /* Topic aggregation across all quizzes */
-    const map = new Map<string, { correct: number; total: number }>();
-    history.forEach(q => {
-      q.topicPerformance?.forEach(tp => {
-        const existing = map.get(tp.topic) || { correct: 0, total: 0 };
-        existing.correct += tp.correct;
-        existing.total += tp.total;
-        map.set(tp.topic, existing);
-      });
-    });
-    const topicAggregated = Array.from(map.entries())
-      .map(([topic, stats]) => ({
-        topic: topic.length > 16 ? topic.slice(0, 16) + '…' : topic,
-        fullTopic: topic,
-        percentage: Math.round((stats.correct / stats.total) * 100),
-        correct: stats.correct,
-        total: stats.total,
-      }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 8);
-
-    /* Calibration: confidently-wrong answers (needs confidence tracking on) */
-    const calibrationMap = new Map<string, number>();
-    let confidentlyWrong = 0;
-    let confidenceRated = 0;
-    history.forEach(q => {
-      if (!q.confidences) return;
-      q.questions?.forEach((question, i) => {
-        const conf = q.confidences?.[i];
-        if (!conf) return;
-        confidenceRated++;
-        if (conf === 'sure' && q.userAnswers?.[i] !== question.correctAnswer) {
-          confidentlyWrong++;
-          const topic = question.topic || 'General';
-          calibrationMap.set(topic, (calibrationMap.get(topic) || 0) + 1);
-        }
-      });
-    });
-    const calibrationTopics = Array.from(calibrationMap.entries())
-      .map(([topic, count]) => ({ topic, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-
-    return {
-      totalQuizzes, avgScore, topScore, totalQuestions, totalCorrect,
-      avgTime, streak, performanceData, topicAggregated,
-      confidentlyWrong, confidenceRated, calibrationTopics,
-    };
-  }, [history]);
-
+  } = analytics;
   /* ── Loading state ── */
-  if (isLoading || status === 'loading') {
+  if ((isLoading && history.length === 0) || status === 'loading') {
     return (
       <div className="min-h-screen bg-black flex flex-col text-white">
         <AppNav />
         <div className="flex-1 flex items-center justify-center">
           <div className="w-10 h-10 border-2 border-white/10 border-t-white/60 rounded-full animate-spin" />
         </div>
+      </div>
+    );
+  }
+
+  if (historyError && history.length === 0) {
+    return (
+      <div className="min-h-screen bg-black text-white"><AppNav />
+        <main className="max-w-xl mx-auto p-8 space-y-4" role="alert">
+          <h1 className="text-xl font-semibold">Could not load your dashboard</h1>
+          <p>{historyError}</p>
+          <button onClick={() => void refetch()} className="bg-white text-black px-5 py-3 rounded-xl">Retry</button>
+        </main>
       </div>
     );
   }
@@ -252,6 +182,7 @@ export default function DashboardPage() {
       <AppNav />
 
       <main className="relative z-10 flex-1 max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8 space-y-8">
+        {historyError && <div role="alert" className="text-red-400">{historyError} <button onClick={() => void refetch()} className="underline">Retry</button></div>}
 
         {/* ── Feature notification banner (dismissible) ── */}
         {showBanner && (
@@ -285,6 +216,7 @@ export default function DashboardPage() {
           </div>
           <Link
             href="/upload"
+            onClick={() => useQuizStore.getState().resetQuiz()}
             className="flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm cursor-pointer self-start md:self-auto"
           >
             <Zap size={15} />
@@ -567,14 +499,14 @@ export default function DashboardPage() {
               disabled={isBusy}
               onClick={(e) => { e.stopPropagation(); handleGenerate(); }}
               className={`rounded-full px-5 py-2 text-sm font-semibold transition-all flex-shrink-0 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
-                selectedFileRef.current && !isBusy && uploadState !== 'error'
+                selectedFile && !isBusy && uploadState !== 'error'
                   ? 'bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.15)]'
                   : 'bg-white/10 text-white/70 hover:bg-white/15'
               }`}
             >
               {isBusy ? (
                 <><Loader2 size={15} className="animate-spin" /> Working…</>
-              ) : selectedFileRef.current ? (
+              ) : selectedFile ? (
                 <><Sparkles size={15} /> Generate</>
               ) : (
                 <>Browse</>
@@ -642,7 +574,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
                       <p className="text-white/55 text-xs tabular-nums">
-                        {new Date(quiz.createdAt || quiz.timestamp || Date.now()).toLocaleDateString(undefined, {
+                        {new Date(quiz.createdAt || quiz.timestamp).toLocaleDateString(undefined, {
                           month: 'short', day: 'numeric', year: 'numeric',
                         })}
                       </p>

@@ -92,6 +92,7 @@ export default function QuizDetailPage() {
   const navActions = (
     <Link
       href="/upload"
+      onClick={() => useQuizStore.getState().resetQuiz()}
       className="flex items-center gap-1.5 liquid-glass rounded-full px-4 py-1.5 text-white text-sm font-medium hover:bg-white/5 transition-colors"
     >
       <Zap size={14} />
@@ -170,7 +171,7 @@ export default function QuizDetailPage() {
           {retakeError && <p className="mt-3 text-sm text-red-400">{retakeError}</p>}
         </div>
 
-        <ResultsDashboard result={result} onRetake={() => router.push('/upload')} />
+        <ResultsDashboard result={result} onRetake={() => { useQuizStore.getState().resetQuiz(); router.push('/upload'); }} />
       </main>
     </div>
   );

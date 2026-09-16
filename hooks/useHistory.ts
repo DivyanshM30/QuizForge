@@ -1,40 +1,45 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { QuizResult } from '@/lib/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createHistoryAnalytics, type HistoryAnalytics, type HistoryPageData, type HistorySummary } from '@/lib/history-analytics';
 
-interface UseHistoryOptions {
-  /** Skip the initial fetch until ready (e.g. until the session is authenticated). Defaults to true. */
-  enabled?: boolean;
-}
-
-/**
- * Fetches the signed-in user's quiz history from /api/history.
- * Shared by the History page and the Dashboard, which previously duplicated
- * this fetch/loading/error logic.
- */
-export function useHistory({ enabled = true }: UseHistoryOptions = {}) {
-  const [history, setHistory] = useState<QuizResult[]>([]);
+export function useHistory({ enabled = true, dashboard = false }: { enabled?: boolean; dashboard?: boolean } = {}) {
+  const [history, setHistory] = useState<HistorySummary[]>([]);
+  const [analytics, setAnalytics] = useState<HistoryAnalytics>(() => createHistoryAnalytics().finish());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const refetch = useCallback(async () => {
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
+  const fetchPage = useCallback(async (cursor: string | null = null) => {
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
     setIsLoading(true);
     try {
-      const res = await fetch('/api/history');
-      if (!res.ok) throw new Error('Failed to fetch history');
-      setHistory(await res.json());
+      const query = new URLSearchParams();
+      if (dashboard) query.set('view', 'dashboard');
+      if (cursor) query.set('cursor', cursor);
+      const res = await fetch(`/api/history?${query}`, { signal: controller.signal });
+      if (!res.ok) throw new Error('Failed to fetch history. Please retry.');
+      const data: HistoryPageData = await res.json();
+      if (controller.signal.aborted) return;
+      setHistory(previous => cursor ? [...previous, ...data.items.filter(item => !previous.some(old => old.id === item.id))] : data.items);
+      if (data.analytics) setAnalytics(data.analytics);
+      setNextCursor(data.nextCursor);
       setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (error) {
+      if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Could not load history');
     } finally {
-      setIsLoading(false);
+      if (requestRef.current === controller) setIsLoading(false);
     }
-  }, []);
-
+  }, [dashboard]);
   useEffect(() => {
-    if (enabled) refetch();
-  }, [enabled, refetch]);
-
-  return { history, isLoading, error, refetch };
+    if (!enabled) return;
+    const timer = setTimeout(() => void fetchPage(), 0);
+    return () => { clearTimeout(timer); requestRef.current?.abort(); };
+  }, [enabled, fetchPage]);
+  return { history, analytics, isLoading, error, nextCursor,
+    refetch: () => fetchPage(),
+    loadMore: () => nextCursor && !isLoading ? fetchPage(nextCursor) : Promise.resolve(),
+  };
 }

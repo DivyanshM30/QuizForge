@@ -23,15 +23,19 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
+  const requestRef = useRef<AbortController | null>(null);
 
   /* Reset the ask state whenever a new question's feedback opens. */
   useEffect(() => {
+    requestRef.current?.abort();
+    requestRef.current = null;
     if (isOpen) {
       setQuery('');
       setAiAnswer(null);
       setAiError(null);
       setAsking(false);
     }
+    return () => { requestRef.current?.abort(); requestRef.current = null; };
   }, [isOpen, question.id]);
 
   /* Dialog behaviour: focus the action on open, trap Tab within the dialog,
@@ -76,6 +80,8 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
   const handleAsk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || asking) return;
+    const controller = new AbortController();
+    requestRef.current = controller;
     setAsking(true);
     setAiError(null);
     try {
@@ -83,15 +89,21 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question, userAnswer, query: query.trim(), documentId }),
+        signal: controller.signal,
       });
       const data = await res.json();
+      if (controller.signal.aborted || requestRef.current !== controller) return;
       if (!res.ok) throw new Error(data.message || 'Failed to get an explanation');
       setAiAnswer(data.explanation);
       setQuery('');
     } catch (err) {
+      if (controller.signal.aborted || requestRef.current !== controller) return;
       setAiError(err instanceof Error ? err.message : 'Failed to get an explanation');
     } finally {
-      setAsking(false);
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        setAsking(false);
+      }
     }
   };
 

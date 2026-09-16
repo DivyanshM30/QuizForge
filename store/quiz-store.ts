@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Question, QuizConfig, QuizSession, Confidence } from '@/lib/types';
+import { Question, QuizConfig, QuizSession, QuizResult, Confidence } from '@/lib/types';
 
 interface QuizStore {
   session: QuizSession | null;
@@ -8,6 +8,10 @@ interface QuizStore {
   isAnalyzing: boolean;
   isGenerating: boolean;
   error: string | null;
+  result: QuizResult | null;
+  saveStatus: 'idle' | 'saving' | 'failed' | 'saved';
+  saveError: string | null;
+  saveQuiz: (retry?: boolean) => Promise<void>;
 
   // Actions
   setDocumentText: (text: string) => void;
@@ -36,8 +40,50 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
   isAnalyzing: false,
   isGenerating: false,
   error: null,
+  result: null,
+  saveStatus: 'idle',
+  saveError: null,
 
-  setDocumentText: (text: string) => set({ documentText: text }),
+  saveQuiz: async (retry = false) => {
+    const { session, saveStatus } = get();
+    if (!session || saveStatus === 'saving' || saveStatus === 'saved' ||
+        (saveStatus === 'failed' && !retry)) return;
+    // The session is immutable while completion is pending, including failed saves.
+    set({ saveStatus: 'saving', saveError: null });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const response = await fetch('/api/save-quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questions: session.questions,
+          config: session.config,
+          userAnswers: session.userAnswers,
+          confidences: session.confidences,
+          quizProof: session.quizProof,
+        }),
+        signal: controller.signal,
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.message || 'Failed to save quiz result. Please retry.');
+      if (!data?.result?.id) throw new Error('The saved result could not be read. Please retry.');
+      if (get().session !== session) return;
+      set({ session: null, result: data.result, saveStatus: 'saved', saveError: null });
+    } catch (error) {
+      if (get().session !== session) return;
+      set({
+        saveStatus: 'failed',
+        saveError: controller.signal.aborted
+          ? 'Saving timed out. Your answers are kept here; retry to confirm the save.'
+          : error instanceof Error ? error.message : 'Could not save. Please retry.',
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  },
+
+  setDocumentText: (text: string) => set({ documentText: text, session: null, result: null, saveStatus: 'idle', saveError: null }),
 
   setDocumentId: (id: string | null) => set({ documentId: id }),
 
@@ -59,12 +105,12 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       config,
       quizProof,
     };
-    set({ session, documentId, error: null });
+    set({ session, documentId, error: null, result: null, saveStatus: 'idle', saveError: null });
   },
 
   submitAnswer: (answer: string, confidence: Confidence = null) => {
     const { session } = get();
-    if (!session) return;
+    if (!session || get().saveStatus !== 'idle') return;
 
     const newAnswers = [...session.userAnswers];
     newAnswers[session.currentQuestionIndex] = answer;
@@ -82,7 +128,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
 
   nextQuestion: () => {
     const { session } = get();
-    if (!session) return;
+    if (!session || get().saveStatus !== 'idle') return;
 
     if (session.currentQuestionIndex < session.questions.length - 1) {
       set({
@@ -106,6 +152,9 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       isAnalyzing: false,
       isGenerating: false,
       error: null,
+      result: null,
+      saveStatus: 'idle',
+      saveError: null,
     });
   },
 

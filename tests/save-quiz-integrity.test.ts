@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   session: { user: { id: 'user-123' } } as { user?: { id?: string } } | undefined,
   quizCreate: vi.fn(),
+  quizFind: vi.fn(),
   reviewPreference: vi.fn(),
   reviewCount: vi.fn(),
   reviewUpsert: vi.fn(),
@@ -15,7 +16,7 @@ vi.mock('next-auth/next', () => ({
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    quizResult: { create: mocks.quizCreate },
+    quizResult: { create: mocks.quizCreate, findUnique: mocks.quizFind },
     document: { findFirst: mocks.documentFindFirst },
     user: { findUnique: mocks.reviewPreference },
     reviewItem: {
@@ -71,6 +72,7 @@ describe('save quiz integrity', () => {
   beforeEach(() => {
     process.env.NEXTAUTH_SECRET = 'test-quiz-proof-secret';
     mocks.session = { user: { id: 'user-123' } };
+    mocks.quizFind.mockReset().mockResolvedValue(null);
     mocks.quizCreate.mockReset().mockImplementation(async ({ data }) => ({
       id: 'result-123',
       createdAt: new Date('2026-08-30T00:00:00.000Z'),
@@ -214,16 +216,41 @@ describe('save quiz integrity', () => {
     expect(mocks.quizCreate.mock.calls[1][0].data.documentId).toBeNull();
   });
 
-  it('rejects replay of an already-consumed quiz proof', async () => {
+  it('returns the original result after a lost response without applying changed answers', async () => {
     const body = submission();
     const first = await POST(request(body));
-    mocks.quizCreate.mockRejectedValueOnce({ code: 'P2002' });
-    const replay = await POST(request(body));
+    const saved = await mocks.quizCreate.mock.results[0].value;
+    mocks.quizFind.mockResolvedValue(saved);
+    const replay = await POST(request({ ...body, userAnswers: ['a', 'a', 'a', 'a', 'a'] }));
 
     expect(first.status).toBe(201);
-    expect(replay.status).toBe(409);
-    await expect(replay.json()).resolves.toEqual({
-      message: 'Quiz result has already been saved',
-    });
+    expect(replay.status).toBe(200);
+    expect((await replay.json()).result.score).toBe(2);
+    expect(mocks.quizCreate).toHaveBeenCalledOnce();
+    expect(mocks.reviewPreference).toHaveBeenCalledOnce();
+  });
+
+  it('resolves concurrent inserts to the winning saved result', async () => {
+    const body = submission();
+    await POST(request(body));
+    const saved = await mocks.quizCreate.mock.results[0].value;
+    mocks.quizFind.mockResolvedValueOnce(null).mockResolvedValueOnce(saved);
+    mocks.quizCreate.mockRejectedValueOnce({ code: 'P2002' });
+    const replay = await POST(request(body));
+    expect(replay.status).toBe(200);
+    expect((await replay.json()).result.id).toBe(saved.id);
+    expect(mocks.reviewPreference).toHaveBeenCalledOnce();
+  });
+
+  it('allows expired proofs to recover an existing save only', async () => {
+    const body = submission();
+    await POST(request(body));
+    const saved = await mocks.quizCreate.mock.results[0].value;
+    const now = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 3_600_000);
+    mocks.quizFind.mockResolvedValueOnce(saved);
+    expect((await POST(request(body))).status).toBe(200);
+    expect((await POST(request(body))).status).toBe(400);
+    expect(mocks.quizCreate).toHaveBeenCalledOnce();
+    now.mockRestore();
   });
 });

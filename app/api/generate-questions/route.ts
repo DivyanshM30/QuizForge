@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { getErrorMessage } from '@/lib/quiz-utils';
-import { createQuizProof } from '@/lib/quiz-proof';
+import { issueQuiz } from '@/lib/quiz-issuance';
 import { validateQuizConfig } from '@/lib/quiz-submission';
 import { prisma } from '@/lib/prisma';
 
@@ -89,12 +89,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const issued = issueQuiz(userId, questions, quizConfig, linkedDocumentId);
+    if (!issued.ok) return NextResponse.json({ error: issued.error }, { status: 422 });
     return NextResponse.json({
       success: true,
-      questions,
+      ...issued.value,
       count: questions.length,
-      documentId: linkedDocumentId,
-      quizProof: createQuizProof(userId, questions, quizConfig, linkedDocumentId),
     });
   } catch (error) {
     console.error('Error generating questions:', error);

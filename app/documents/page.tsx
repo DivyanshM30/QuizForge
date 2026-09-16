@@ -143,6 +143,7 @@ export default function DocumentsPage() {
             </div>
             <Link
               href="/upload"
+              onClick={() => useQuizStore.getState().resetQuiz()}
               className="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm"
             >
               <Upload size={15} />

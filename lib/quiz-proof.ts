@@ -64,7 +64,8 @@ export function verifyQuizProof(
   userId: string,
   questions: Question[],
   config: QuizConfig,
-  now = Date.now()
+  now = Date.now(),
+  options: { allowExpired?: boolean } = {}
 ): QuizProofClaims | null {
   const [payload, suppliedSignature, extra] = proof.split('.');
   if (
@@ -95,7 +96,7 @@ export function verifyQuizProof(
       !Number.isSafeInteger(claims.expiresAt) ||
       claims.issuedAt > now ||
       claims.expiresAt !== claims.issuedAt + config.timeLimit * 60 * 1000 + SAVE_GRACE_MS ||
-      claims.expiresAt <= now ||
+      (!options.allowExpired && claims.expiresAt <= now) ||
       (claims.documentId !== null &&
         (typeof claims.documentId !== 'string' ||
           claims.documentId.length === 0 ||

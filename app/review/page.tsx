@@ -1,4 +1,5 @@
 'use client';
+import { useQuizStore } from '@/store/quiz-store';
 
 import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
@@ -179,6 +180,7 @@ export default function ReviewPage() {
             </div>
             <Link
               href="/upload"
+              onClick={() => useQuizStore.getState().resetQuiz()}
               className="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm"
             >
               Take a quiz
