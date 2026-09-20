@@ -41,7 +41,7 @@ export default function ResultsDashboard({ result, onRetake }: ResultsDashboardP
 
       {/* Score summary */}
       <div className="liquid-glass rounded-3xl p-8">
-        <h2 className="text-white/40 text-xs font-medium uppercase tracking-widest text-center mb-6">Results</h2>
+        <h2 className="text-white/40 text-xs font-medium uppercase tracking-widest text-center mb-6">{result.config.mode === 'exam' ? 'Exam results' : 'Results'}</h2>
         <div className="flex flex-wrap justify-center gap-10">
           <div className="text-center">
             <div className={`text-5xl font-bold tabular-nums ${scoreColor}`}>

@@ -5,6 +5,7 @@ import { useQuizStore } from '@/store/quiz-store';
 import type { Confidence } from '@/lib/types';
 import Timer from './Timer';
 import FeedbackModal from './FeedbackModal';
+import ExamInterface from './ExamInterface';
 
 interface QuizInterfaceProps {
   onComplete: () => void;
@@ -24,6 +25,7 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
     return () => controller.abort();
   }, []);
   if (!session) return null;
+  if (session.config.mode === 'exam') return <ExamInterface onComplete={onComplete} />;
   return <QuizQuestion key={`${session.quizProof}:${session.currentQuestionIndex}`} onComplete={onComplete} confidenceEnabled={confidenceEnabled} />;
 }
 
@@ -40,7 +42,7 @@ function QuizQuestion({ onComplete, confidenceEnabled }: QuizInterfaceProps & { 
 
   const hasAnswered = userAnswer !== null;
 
-  if (!session || !currentQuestion) return null;
+  if (!session || !currentQuestion || !currentQuestion.correctAnswer || currentQuestion.explanation === undefined) return null;
 
   const handleAnswerSelect = (answer: string) => { if (!hasAnswered) setSelectedAnswer(answer); };
 
@@ -186,7 +188,7 @@ function QuizQuestion({ onComplete, confidenceEnabled }: QuizInterfaceProps & { 
       </div>
 
       <FeedbackModal
-        question={currentQuestion}
+        question={{ ...currentQuestion, correctAnswer: currentQuestion.correctAnswer, explanation: currentQuestion.explanation }}
         userAnswer={userAnswer}
         isOpen={showFeedback}
         onContinue={handleContinue}

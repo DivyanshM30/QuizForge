@@ -62,7 +62,9 @@ export function validateQuizConfig(
     (input.timeLimit as number) > QUIZ_LIMITS.MAX_TIME ||
     typeof difficulty !== 'string' ||
     !CONFIG_DIFFICULTIES.includes(difficulty as QuizConfig['difficulty']) ||
-    (input.cram !== undefined && typeof input.cram !== 'boolean')
+    (input.cram !== undefined && typeof input.cram !== 'boolean') ||
+    (input.mode !== undefined && input.mode !== 'practice' && input.mode !== 'exam') ||
+    (input.mode === 'exam' && input.cram === true)
   ) {
     return { ok: false, error: 'Quiz configuration is invalid' };
   }
@@ -74,6 +76,7 @@ export function validateQuizConfig(
       timeLimit: input.timeLimit as number,
       difficulty: difficulty as QuizConfig['difficulty'],
       ...(input.cram === true ? { cram: true } : {}),
+      ...(input.mode === 'exam' ? { mode: 'exam' as const } : {}),
     },
   };
 }

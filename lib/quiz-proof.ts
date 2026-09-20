@@ -2,6 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { Question, QuizConfig } from './types';
 
 const SAVE_GRACE_MS = 15 * 60 * 1000;
+const saveGrace = (config: QuizConfig) => config.mode === 'exam' ? 30_000 : SAVE_GRACE_MS;
 const MAX_DOCUMENT_ID_LENGTH = 200;
 
 export interface QuizProofClaims {
@@ -34,6 +35,7 @@ function proofMessage(
       timeLimit: config.timeLimit,
       difficulty: config.difficulty,
       cram: config.cram === true,
+      ...(config.mode === 'exam' ? { mode: 'exam' } : {}),
     },
   });
 }
@@ -52,7 +54,7 @@ export function createQuizProof(
   const claims: QuizProofClaims = {
     attemptId: randomBytes(18).toString('base64url'),
     issuedAt: now,
-    expiresAt: now + config.timeLimit * 60 * 1000 + SAVE_GRACE_MS,
+    expiresAt: now + config.timeLimit * 60 * 1000 + saveGrace(config),
     documentId,
   };
   const payload = Buffer.from(JSON.stringify(claims), 'utf8').toString('base64url');
@@ -95,7 +97,7 @@ export function verifyQuizProof(
       !Number.isSafeInteger(claims.issuedAt) ||
       !Number.isSafeInteger(claims.expiresAt) ||
       claims.issuedAt > now ||
-      claims.expiresAt !== claims.issuedAt + config.timeLimit * 60 * 1000 + SAVE_GRACE_MS ||
+      claims.expiresAt !== claims.issuedAt + config.timeLimit * 60 * 1000 + saveGrace(config) ||
       (!options.allowExpired && claims.expiresAt <= now) ||
       (claims.documentId !== null &&
         (typeof claims.documentId !== 'string' ||

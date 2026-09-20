@@ -113,7 +113,7 @@ export default function DashboardPage() {
       const res = await fetch(`/api/cram?count=${cramCount}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to build cram quiz');
-      startQuiz(data.questions, data.config, data.quizProof, data.documentId);
+      startQuiz(data.questions, data.config, data.quizProof, data.documentId, data.startedAt);
       router.push('/upload?step=quiz');
     } catch (err) {
       setCramError(err instanceof Error ? err.message : 'Failed to build cram quiz');

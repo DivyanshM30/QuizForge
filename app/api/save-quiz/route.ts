@@ -6,6 +6,7 @@ import { questionHash, dueDateForWrong, REVIEW_QUEUE_CAP } from "@/lib/review"
 import { deriveQuizMetrics, deserializeQuizResult } from "@/lib/quiz-utils"
 import { validateQuizSubmission } from "@/lib/quiz-submission"
 import { verifyQuizProof } from "@/lib/quiz-proof"
+import { openExam } from "@/lib/exam-token"
 import type { Confidence, Question } from "@/lib/types"
 
 export const dynamic = 'force-dynamic'
@@ -21,7 +22,12 @@ export async function POST(req: Request) {
       )
     }
 
-    const submission = validateQuizSubmission(await req.json())
+    const body = await req.json()
+    const isExam = typeof body?.quizProof === 'string' && body.quizProof.startsWith('exam1.')
+    const exam = isExam ? openExam(body.quizProof, session.user.id) : null
+    if (isExam && !exam) return NextResponse.json({ message: 'Exam verification failed' }, { status: 400 })
+    // The encrypted attempt is authoritative; client questions/configuration cannot alter grading.
+    const submission = validateQuizSubmission(exam ? { ...body, ...exam } : body)
     if (!submission.ok) {
       return NextResponse.json({ message: submission.error }, { status: 400 })
     }
@@ -33,6 +39,7 @@ export async function POST(req: Request) {
       confidences,
       quizProof,
     } = submission.value
+    if (config.mode === 'exam' && !isExam) return NextResponse.json({ message: 'Exam verification failed' }, { status: 400 })
 
     // Expired proofs may retrieve an existing save, but cannot create a new one.
     const proofClaims = verifyQuizProof(quizProof, session.user.id, questions, config, Date.now(), { allowExpired: true })

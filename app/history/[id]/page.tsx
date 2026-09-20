@@ -66,7 +66,7 @@ export default function QuizDetailPage() {
       const response = await fetch(`/api/history/${params.id}`, { method: 'POST' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to prepare retake');
-      startQuiz(data.questions, data.config, data.quizProof, data.documentId);
+      startQuiz(data.questions, data.config, data.quizProof, data.documentId, data.startedAt);
       router.push('/upload?step=quiz');
     } catch (error) {
       setRetakeError(error instanceof Error ? error.message : 'Failed to prepare retake');

@@ -11,6 +11,23 @@ describe('quiz completion lifecycle', () => {
   beforeEach(() => state().resetQuiz());
   afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
+  it('uses the issued exam deadline and freezes editable answers for retry', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(61_000);
+    const fetcher = vi.fn().mockRejectedValueOnce(new Error('Offline')).mockResolvedValueOnce(Response.json({ result: { id: 'exam-result' } }));
+    vi.stubGlobal('fetch', fetcher);
+    state().startQuiz(questions, { ...config, mode: 'exam' }, 'exam1.token', null, 1_000);
+    expect(state().getRemainingTime()).toBe(240);
+    state().submitAnswer('b');
+    await state().saveQuiz();
+    expect(state().submitAnswer('a')).toBe(false);
+    expect(state().goToQuestion(0)).toBe(false);
+    await state().saveQuiz(true);
+    expect(fetcher.mock.calls[0][1].body).toBe(fetcher.mock.calls[1][1].body);
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).not.toHaveProperty('questions');
+    expect(state().result?.id).toBe('exam-result');
+  });
+
   it('accepts an answer in the final millisecond without expiring early', () => {
     vi.useFakeTimers();
     vi.setSystemTime(1_000);

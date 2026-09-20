@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Question, QuizConfig, QuizSession, QuizResult, Confidence } from '@/lib/types';
+import { AttemptQuestion, QuizConfig, QuizSession, QuizResult, Confidence } from '@/lib/types';
 import { remainingSeconds } from '@/lib/countdown';
 
 interface QuizStore {
@@ -21,16 +21,18 @@ interface QuizStore {
   setGenerating: (isGenerating: boolean) => void;
   setError: (error: string | null) => void;
   startQuiz: (
-    questions: Question[],
+    questions: AttemptQuestion[],
     config: QuizConfig,
     quizProof: string,
-    documentId?: string | null
+    documentId?: string | null,
+    startedAt?: number
   ) => void;
   submitAnswer: (answer: string, confidence?: Confidence) => boolean;
   nextQuestion: () => void;
+  goToQuestion: (index: number) => boolean;
   endQuiz: () => void;
   resetQuiz: () => void;
-  getCurrentQuestion: () => Question | null;
+  getCurrentQuestion: () => AttemptQuestion | null;
   getRemainingTime: () => number;
 }
 
@@ -58,7 +60,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          questions: session.questions,
+          ...(session.config.mode === 'exam' ? {} : { questions: session.questions }),
           config: session.config,
           userAnswers: session.userAnswers,
           confidences: session.confidences,
@@ -94,14 +96,14 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
 
   setError: (error: string | null) => set({ error }),
 
-  startQuiz: (questions: Question[], config: QuizConfig, quizProof: string, documentId = null) => {
+  startQuiz: (questions: AttemptQuestion[], config: QuizConfig, quizProof: string, documentId = null, startedAt?: number) => {
     const timeLimitSeconds = config.timeLimit * 60;
     const session: QuizSession = {
       questions,
       currentQuestionIndex: 0,
       userAnswers: new Array(questions.length).fill(null),
       confidences: new Array(questions.length).fill(null),
-      startTime: Date.now(),
+      startTime: config.mode === 'exam' && Number.isFinite(startedAt) ? startedAt! : Date.now(),
       timeLimit: timeLimitSeconds,
       config,
       quizProof,
@@ -140,6 +142,14 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
         },
       });
     }
+  },
+
+  goToQuestion: (index: number) => {
+    const { session } = get();
+    if (!session || session.config.mode !== 'exam' || get().saveStatus !== 'idle' ||
+        get().getRemainingTime() === 0 || !Number.isInteger(index) || index < 0 || index >= session.questions.length) return false;
+    set({ session: { ...session, currentQuestionIndex: index } });
+    return true;
   },
 
   endQuiz: () => {

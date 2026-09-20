@@ -28,6 +28,7 @@ vi.mock('@/lib/prisma', () => ({
 
 import { POST } from '@/app/api/save-quiz/route';
 import { createQuizProof } from '@/lib/quiz-proof';
+import { issueQuiz } from '@/lib/quiz-issuance';
 
 const questions = Array.from({ length: 5 }, (_, index) => ({
   id: `q${index + 1}`,
@@ -82,6 +83,34 @@ describe('save quiz integrity', () => {
     mocks.reviewCount.mockReset();
     mocks.reviewUpsert.mockReset();
     mocks.documentFindFirst.mockReset().mockResolvedValue({ id: 'document-123' });
+  });
+
+  it('grades encrypted exams from the issued key and recovers an expired saved attempt', async () => {
+    const issued = issueQuiz('user-123', questions, { numQuestions: 5, timeLimit: 5, difficulty: 'medium', mode: 'exam' }, null);
+    if (!issued.ok) throw new Error(issued.error);
+    const body = { quizProof: issued.value.quizProof, userAnswers: ['a', 'b', null, 'a', 'd'], config: { mode: 'practice' }, questions: [] };
+    const response = await POST(request(body));
+    expect(response.status).toBe(201);
+    const result = (await response.json()).result;
+    expect(result.score).toBe(2);
+    expect(result.config.mode).toBe('exam');
+    expect(result.questions).toEqual(questions);
+    const saved = await mocks.quizCreate.mock.results[0].value;
+    const now = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 330_000);
+    try {
+      mocks.quizFind.mockResolvedValueOnce(saved);
+      expect((await POST(request({ ...body, userAnswers: Array(5).fill('a') }))).status).toBe(200);
+      expect((await POST(request(body))).status).toBe(400);
+      expect(mocks.quizCreate).toHaveBeenCalledOnce();
+    } finally { now.mockRestore(); }
+  });
+
+  it('rejects another user or a damaged exam token before persistence', async () => {
+    const issued = issueQuiz('other-user', questions, { numQuestions: 5, timeLimit: 5, difficulty: 'medium', mode: 'exam' }, null);
+    if (!issued.ok) throw new Error(issued.error);
+    expect((await POST(request({ quizProof: issued.value.quizProof, userAnswers: Array(5).fill(null) }))).status).toBe(400);
+    expect((await POST(request({ quizProof: 'exam1.broken' }))).status).toBe(400);
+    expect(mocks.quizCreate).not.toHaveBeenCalled();
   });
 
   it('rejects unauthenticated submissions before validation or persistence', async () => {

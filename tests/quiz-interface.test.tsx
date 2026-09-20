@@ -16,6 +16,22 @@ const state = () => useQuizStore.getState();
 const render = () => renderToStaticMarkup(<QuizInterface onComplete={() => {}} />);
 beforeEach(() => state().resetQuiz());
 
+it('shows editable exam answers without correctness or explanations and supports revisiting', () => {
+  state().startQuiz([question, { ...question, id: 'q2' }], { numQuestions: 2, timeLimit: 5, difficulty: 'easy', mode: 'exam' }, 'proof', null, Date.now());
+  state().submitAnswer('b');
+  const html = render();
+  expect(html).toContain('Finish exam');
+  expect(html).not.toContain('Submit Answer');
+  expect(html).not.toContain('text-green');
+  expect(html).not.toContain('Ask AI');
+  expect(state().goToQuestion(1)).toBe(true);
+  expect(state().goToQuestion(0)).toBe(true);
+  state().submitAnswer('a');
+  expect(state().session?.userAnswers).toEqual(['a', null]);
+  expect(state().goToQuestion(-1)).toBe(false);
+  expect(state().goToQuestion(2)).toBe(false);
+});
+
 it('derives submitted status on remount and keeps the final completion action available', () => {
   state().startQuiz([question], { numQuestions: 1, timeLimit: 5, difficulty: 'easy' }, 'proof');
   expect(render()).toContain('Submit Answer');

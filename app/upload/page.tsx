@@ -130,7 +130,7 @@ export default function UploadPage() {
         throw new Error(data.error || 'Failed to generate questions');
       }
       const data = await response.json();
-      if (!controller.signal.aborted) startQuiz(data.questions, data.config ?? config, data.quizProof, data.documentId);
+      if (!controller.signal.aborted) startQuiz(data.questions, data.config ?? config, data.quizProof, data.documentId, data.startedAt);
     } catch (err) {
       const name = (err as { name?: string })?.name;
       const message = (err as { message?: string })?.message ?? '';
