@@ -11,33 +11,34 @@ interface QuizInterfaceProps {
 }
 
 export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
-  const { session, getCurrentQuestion, submitAnswer, nextQuestion } = useQuizStore();
-
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [hasAnswered, setHasAnswered] = useState(false);
+  const { session } = useQuizStore();
 
   /* Confidence capture is opt-in (Settings → Study preferences). */
   const [confidenceEnabled, setConfidenceEnabled] = useState(false);
-  const [confidence, setConfidence] = useState<Confidence>(null);
   useEffect(() => {
-    fetch('/api/account')
+    const controller = new AbortController();
+    fetch('/api/account', { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setConfidenceEnabled(Boolean(d?.confidenceEnabled)))
-      .catch(() => setConfidenceEnabled(false));
+      .then((d) => { if (!controller.signal.aborted) setConfidenceEnabled(Boolean(d?.confidenceEnabled)); })
+      .catch(() => { if (!controller.signal.aborted) setConfidenceEnabled(false); });
+    return () => controller.abort();
   }, []);
+  if (!session) return null;
+  return <QuizQuestion key={`${session.quizProof}:${session.currentQuestionIndex}`} onComplete={onComplete} confidenceEnabled={confidenceEnabled} />;
+}
+
+function QuizQuestion({ onComplete, confidenceEnabled }: QuizInterfaceProps & { confidenceEnabled: boolean }) {
+  const { session, getCurrentQuestion, submitAnswer, nextQuestion } = useQuizStore();
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [confidence, setConfidence] = useState<Confidence>(null);
 
   const currentQuestion = getCurrentQuestion();
   const currentIndex = session?.currentQuestionIndex || 0;
   const totalQuestions = session?.questions.length || 0;
   const userAnswer = session?.userAnswers[currentIndex] || null;
 
-  useEffect(() => {
-    if (session) {
-      setSelectedAnswer(userAnswer);
-      setHasAnswered(userAnswer !== null);
-    }
-  }, [session, currentIndex, userAnswer]);
+  const hasAnswered = userAnswer !== null;
 
   if (!session || !currentQuestion) return null;
 
@@ -46,7 +47,6 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
   const handleSubmit = () => {
     if (!selectedAnswer || hasAnswered) return;
     submitAnswer(selectedAnswer, confidenceEnabled ? confidence : null);
-    setHasAnswered(true);
     setShowFeedback(true);
   };
 
@@ -54,7 +54,6 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
     setShowFeedback(false);
     setSelectedAnswer(null);
     setConfidence(null);
-    setHasAnswered(false);
     if (currentIndex < totalQuestions - 1) nextQuestion();
     else onComplete();
   };
@@ -171,15 +170,15 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
           >
             Submit Answer
           </button>
-        ) : currentIndex < totalQuestions - 1 ? (
+        ) : (
           <button
             onClick={handleContinue}
             className="w-full bg-white/10 border border-white/20 text-white font-semibold py-3.5 rounded-xl
               hover:bg-white/15 transition-all cursor-pointer"
           >
-            Next Question →
+            {currentIndex < totalQuestions - 1 ? 'Next Question →' : 'Finish Quiz'}
           </button>
-        ) : null}
+        )}
       </div>
 
       <FeedbackModal

@@ -63,6 +63,7 @@ export default function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const animRef = useRef<AnimFrameRef>({ id: null });
   const fadingOutRef = useRef(false);
+  const restartRef = useRef<{ id: ReturnType<typeof setTimeout> | null }>({ id: null });
 
   const { status } = useSession();
   const isLoggedIn = status === 'authenticated';
@@ -117,7 +118,7 @@ export default function HeroSection() {
     if (!video) return;
     cancelAnim(animRef.current);
     video.style.opacity = '0';
-    setTimeout(() => {
+    restartRef.current.id = setTimeout(() => {
       video.currentTime = 0;
       video.play().then(startFadeIn).catch(() => {});
     }, 100);
@@ -126,6 +127,8 @@ export default function HeroSection() {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    const animation = animRef.current;
+    const restart = restartRef.current;
     // Respect reduced-motion: don't autoplay or pull the full video down.
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const onCanPlay = () => video.play().then(startFadeIn).catch(() => {});
@@ -140,7 +143,9 @@ export default function HeroSection() {
       video.removeEventListener('canplay', onCanPlay);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('ended', handleEnded);
-      cancelAnim(animRef.current);
+      cancelAnim(animation);
+      if (restart.id !== null) clearTimeout(restart.id);
+      video.pause();
     };
   }, [startFadeIn, handleTimeUpdate, handleEnded]);
 

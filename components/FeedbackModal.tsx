@@ -13,6 +13,10 @@ interface FeedbackModalProps {
 }
 
 export default function FeedbackModal({ question, userAnswer, isOpen, onContinue }: FeedbackModalProps) {
+  return isOpen ? <FeedbackContent key={question.id} question={question} userAnswer={userAnswer} onContinue={onContinue} /> : null;
+}
+
+function FeedbackContent({ question, userAnswer, onContinue }: Omit<FeedbackModalProps, 'isOpen'>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const continueRef = useRef<HTMLButtonElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
@@ -25,23 +29,12 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
   const [asking, setAsking] = useState(false);
   const requestRef = useRef<AbortController | null>(null);
 
-  /* Reset the ask state whenever a new question's feedback opens. */
-  useEffect(() => {
-    requestRef.current?.abort();
-    requestRef.current = null;
-    if (isOpen) {
-      setQuery('');
-      setAiAnswer(null);
-      setAiError(null);
-      setAsking(false);
-    }
-    return () => { requestRef.current?.abort(); requestRef.current = null; };
-  }, [isOpen, question.id]);
+  // Each opening owns fresh state; closing/changing questions cancels its request.
+  useEffect(() => () => { requestRef.current?.abort(); requestRef.current = null; }, []);
 
   /* Dialog behaviour: focus the action on open, trap Tab within the dialog,
      close on Escape, restore focus to the trigger on close. */
   useEffect(() => {
-    if (!isOpen) return;
     previouslyFocused.current = document.activeElement as HTMLElement | null;
     continueRef.current?.focus();
 
@@ -70,9 +63,7 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
       document.removeEventListener('keydown', onKeyDown);
       previouslyFocused.current?.focus();
     };
-  }, [isOpen, onContinue]);
-
-  if (!isOpen) return null;
+  }, [onContinue]);
 
   const isCorrect = userAnswer === question.correctAnswer;
   const correctOption = question.options[question.correctAnswer];

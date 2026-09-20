@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { formatTime, accuracyTextClass } from '@/lib/quiz-utils';
 import { useQuizStore } from '@/store/quiz-store';
 import { useHistory } from '@/hooks/useHistory';
+import { useBannerDismissed } from '@/hooks/useBannerDismissed';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import AppNav from '@/components/AppNav';
 
@@ -96,16 +97,8 @@ export default function DashboardPage() {
 
   /* ── Feature banner: announces Smart Review + confidence tracking (on by
      default), dismissible once (remembered in localStorage). */
-  const [showBanner, setShowBanner] = useState(false);
-  useEffect(() => {
-    if (!review) { setShowBanner(false); return; }
-    setShowBanner(!localStorage.getItem('features-banner-dismissed'));
-  }, [review]);
-
-  const dismissBanner = useCallback(() => {
-    localStorage.setItem('features-banner-dismissed', '1');
-    setShowBanner(false);
-  }, []);
+  const { dismissed: bannerDismissed, dismiss: dismissBanner } = useBannerDismissed();
+  const showBanner = review !== null && !bannerDismissed;
 
   /* ── Cram Mode: build a quiz from past mistakes + weak topics ── */
   const { startQuiz } = useQuizStore();
