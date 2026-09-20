@@ -28,7 +28,7 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
 }
 
 function QuizQuestion({ onComplete, confidenceEnabled }: QuizInterfaceProps & { confidenceEnabled: boolean }) {
-  const { session, getCurrentQuestion, submitAnswer, nextQuestion } = useQuizStore();
+  const { session, getCurrentQuestion, submitAnswer, nextQuestion, getRemainingTime } = useQuizStore();
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [confidence, setConfidence] = useState<Confidence>(null);
@@ -46,15 +46,19 @@ function QuizQuestion({ onComplete, confidenceEnabled }: QuizInterfaceProps & { 
 
   const handleSubmit = () => {
     if (!selectedAnswer || hasAnswered) return;
-    submitAnswer(selectedAnswer, confidenceEnabled ? confidence : null);
-    setShowFeedback(true);
+    if (submitAnswer(selectedAnswer, confidenceEnabled ? confidence : null)) {
+      setShowFeedback(true);
+    } else if (getRemainingTime() === 0) {
+      onComplete();
+    }
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
     setSelectedAnswer(null);
     setConfidence(null);
-    if (currentIndex < totalQuestions - 1) nextQuestion();
+    if (getRemainingTime() === 0) onComplete();
+    else if (currentIndex < totalQuestions - 1) nextQuestion();
     else onComplete();
   };
 

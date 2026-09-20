@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Question, QuizConfig, QuizSession, QuizResult, Confidence } from '@/lib/types';
+import { remainingSeconds } from '@/lib/countdown';
 
 interface QuizStore {
   session: QuizSession | null;
@@ -25,7 +26,7 @@ interface QuizStore {
     quizProof: string,
     documentId?: string | null
   ) => void;
-  submitAnswer: (answer: string, confidence?: Confidence) => void;
+  submitAnswer: (answer: string, confidence?: Confidence) => boolean;
   nextQuestion: () => void;
   endQuiz: () => void;
   resetQuiz: () => void;
@@ -110,7 +111,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
 
   submitAnswer: (answer: string, confidence: Confidence = null) => {
     const { session } = get();
-    if (!session || get().saveStatus !== 'idle') return;
+    if (!session || get().saveStatus !== 'idle' || get().getRemainingTime() === 0) return false;
 
     const newAnswers = [...session.userAnswers];
     newAnswers[session.currentQuestionIndex] = answer;
@@ -124,11 +125,12 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
         confidences: newConfidences,
       },
     });
+    return true;
   },
 
   nextQuestion: () => {
     const { session } = get();
-    if (!session || get().saveStatus !== 'idle') return;
+    if (!session || get().saveStatus !== 'idle' || get().getRemainingTime() === 0) return;
 
     if (session.currentQuestionIndex < session.questions.length - 1) {
       set({
@@ -168,8 +170,6 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     const { session } = get();
     if (!session) return 0;
 
-    const elapsed = (Date.now() - session.startTime) / 1000;
-    const remaining = session.timeLimit - elapsed;
-    return Math.max(0, Math.floor(remaining));
+    return remainingSeconds(session.startTime + session.timeLimit * 1000);
   },
 }));

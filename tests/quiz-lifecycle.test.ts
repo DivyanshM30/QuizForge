@@ -11,6 +11,46 @@ describe('quiz completion lifecycle', () => {
   beforeEach(() => state().resetQuiz());
   afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
+  it('accepts an answer in the final millisecond without expiring early', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+    start();
+    vi.setSystemTime(1_000 + config.timeLimit * 60_000 - 1);
+    expect(state().getRemainingTime()).toBe(1);
+    expect(state().submitAnswer('a', 'sure')).toBe(true);
+    expect(state().session?.userAnswers).toEqual(['a']);
+  });
+
+  it.each([0, 60_000])('rejects late input when a timer callback is delayed by %i ms', async delay => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ result: { id: 'saved' } }));
+    vi.stubGlobal('fetch', fetcher);
+    state().startQuiz([...questions, { ...questions[0], id: 'q2' }], { ...config, numQuestions: 2 }, 'attempt');
+    state().submitAnswer('b', 'unsure');
+    state().nextQuestion();
+    vi.setSystemTime(1_000 + config.timeLimit * 60_000 + delay);
+    expect(state().getRemainingTime()).toBe(0);
+    expect(state().submitAnswer('a', 'sure')).toBe(false);
+    expect(state().session?.userAnswers).toEqual(['b', null]);
+    expect(state().session?.confidences).toEqual(['unsure', null]);
+    await Promise.all([state().saveQuiz(), state().saveQuiz()]);
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toMatchObject({
+      userAnswers: ['b', null], confidences: ['unsure', null],
+    });
+  });
+
+  it('prevents advancing questions after the deadline', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+    state().startQuiz([...questions, { ...questions[0], id: 'q2' }], { ...config, numQuestions: 2 }, 'attempt');
+    state().submitAnswer('a');
+    vi.setSystemTime(1_000 + config.timeLimit * 60_000);
+    state().nextQuestion();
+    expect(state().session?.currentQuestionIndex).toBe(0);
+  });
+
   it('freezes answers and makes one request when completion fires twice', async () => {
     let resolve!: (response: Response) => void;
     const fetcher = vi.fn(() => new Promise<Response>(r => { resolve = r; }));
