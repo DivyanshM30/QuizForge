@@ -4,7 +4,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { questionHash } from '@/lib/review';
-import { createQuizProof } from '@/lib/quiz-proof';
+import { issueQuiz } from '@/lib/quiz-issuance';
+import { parseQuestion } from '@/lib/quiz-submission';
 import { shuffleQuestions } from '@/lib/quiz-utils';
 import type { Question } from '@/lib/types';
 
@@ -58,12 +59,18 @@ export async function GET(req: NextRequest) {
       let questions: Question[];
       let answers: (string | null)[];
       try {
-        questions = JSON.parse(r.questions);
+        const raw = JSON.parse(r.questions);
+        if (!Array.isArray(raw)) continue;
+        // Preserve indices so legacy invalid entries do not shift their answers.
+        questions = raw;
         answers = JSON.parse(r.userAnswers);
+        if (!Array.isArray(answers)) continue;
       } catch {
         continue;
       }
-      questions.forEach((q, i) => {
+      questions.forEach((raw, i) => {
+        const q = parseQuestion(raw);
+        if (!q) return;
         const topic = q.topic || 'General';
         const stats = byTopic.get(topic) || { correct: 0, total: 0 };
         stats.total++;
@@ -125,12 +132,9 @@ export async function GET(req: NextRequest) {
       cram: true,
     };
 
-    return NextResponse.json({
-      questions,
-      config,
-      documentId: null,
-      quizProof: createQuizProof(userId, questions, config, null),
-    });
+    const issued = issueQuiz(userId, questions, config, null);
+    if (!issued.ok) return NextResponse.json({ message: issued.error }, { status: 422 });
+    return NextResponse.json(issued.value);
   } catch (error) {
     console.error('Cram error:', error);
     return NextResponse.json({ message: 'Failed to build cram quiz' }, { status: 500 });

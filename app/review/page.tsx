@@ -1,6 +1,7 @@
 'use client';
+import { useQuizStore } from '@/store/quiz-store';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -45,30 +46,29 @@ export default function ReviewPage() {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
 
-  const fetchDue = useCallback(async () => {
-    try {
-      const res = await fetch('/api/review/due');
-      if (!res.ok) throw new Error('Failed to load reviews');
-      const data = await res.json();
-      setEnabled(data.enabled !== false);
-      setItems(data.items);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load reviews');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (status === 'authenticated') fetchDue();
-  }, [status, fetchDue]);
+    if (status !== 'authenticated') return;
+    const controller = new AbortController();
+    fetch('/api/review/due', { signal: controller.signal })
+      .then(res => { if (!res.ok) throw new Error('Failed to load reviews'); return res.json(); })
+      .then(data => {
+        if (controller.signal.aborted) return;
+        setEnabled(data.enabled !== false);
+        setItems(data.items);
+      })
+      .catch(err => { if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Failed to load reviews'); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [status]);
 
   useEffect(() => {
     if (status !== 'authenticated') return;
-    fetch('/api/account')
+    const controller = new AbortController();
+    fetch('/api/account', { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setConfidenceEnabled(Boolean(d?.confidenceEnabled)))
-      .catch(() => setConfidenceEnabled(false));
+      .then((d) => { if (!controller.signal.aborted) setConfidenceEnabled(Boolean(d?.confidenceEnabled)); })
+      .catch(() => { if (!controller.signal.aborted) setConfidenceEnabled(false); });
+    return () => controller.abort();
   }, [status]);
 
   const current = items[index] ?? null;
@@ -179,6 +179,7 @@ export default function ReviewPage() {
             </div>
             <Link
               href="/upload"
+              onClick={() => useQuizStore.getState().resetQuiz()}
               className="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm"
             >
               Take a quiz

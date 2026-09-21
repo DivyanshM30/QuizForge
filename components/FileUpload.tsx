@@ -1,9 +1,7 @@
 'use client';
 
-import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { validateFile } from '@/lib/file-validation';
-import { useQuizStore } from '@/store/quiz-store';
+import { useFileUpload } from '@/hooks/useFileUpload';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
 
 interface FileUploadProps {
@@ -13,47 +11,14 @@ interface FileUploadProps {
 }
 
 export default function FileUpload({ onFileUploaded, onAnalysisComplete, isAnalyzing = false }: FileUploadProps) {
-  const { setDocumentId } = useQuizStore();
-  const [error, setError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
-
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) return;
-    const file = acceptedFiles[0];
-    setError(null);
-    setUploading(true);
-    setFileName(file.name);
-
-    const validation = validateFile(file);
-    if (!validation.valid) {
-      setError(validation.error || 'Invalid file');
-      setUploading(false);
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const response = await fetch('/api/analyze-document', { method: 'POST', body: formData });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to analyze document');
-      }
-      const data = await response.json();
-      setDocumentId(data.documentId ?? null);
-      onFileUploaded(file);
-      onAnalysisComplete(data.text);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload file');
-      setFileName(null);
-    } finally {
-      setUploading(false);
-    }
-  }, [onFileUploaded, onAnalysisComplete, setDocumentId]);
+  const { uploadError: error, isBusy: uploading, fileName, uploadFile, rejectFile } = useFileUpload({
+    onComplete: (text, file) => { onFileUploaded(file); onAnalysisComplete(text); },
+  });
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
+    onDrop: (files) => { if (files[0]) void uploadFile(files[0]); },
+    onDropRejected: () => rejectFile('Choose one PDF or DOCX file up to 10 MB.'),
+    disabled: uploading || isAnalyzing,
     accept: {
       'application/pdf': ['.pdf'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],

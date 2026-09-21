@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { deserializeQuizResult, shuffleQuestions } from "@/lib/quiz-utils"
-import { createQuizProof } from "@/lib/quiz-proof"
+import { issueQuiz } from "@/lib/quiz-issuance"
+import { validateQuizContent } from "@/lib/quiz-submission"
 
 export const dynamic = 'force-dynamic'
 
@@ -66,20 +67,14 @@ export async function POST(
     }
 
     const formattedResult = deserializeQuizResult(result)
-    const questions = shuffleQuestions(formattedResult.questions)
+    const parsed = validateQuizContent(formattedResult)
+    if (!parsed.ok) return NextResponse.json({ message: 'This older quiz cannot be retaken. Generate a new quiz from your document.' }, { status: 422 })
+    const questions = shuffleQuestions(parsed.value.questions)
     const config = { ...formattedResult.config, numQuestions: questions.length }
 
-    return NextResponse.json({
-      questions,
-      config,
-      documentId: formattedResult.documentId ?? null,
-      quizProof: createQuizProof(
-        session.user.id,
-        questions,
-        config,
-        formattedResult.documentId ?? null
-      ),
-    })
+    const issued = issueQuiz(session.user.id, questions, config, formattedResult.documentId ?? null)
+    if (!issued.ok) return NextResponse.json({ message: issued.error }, { status: 422 })
+    return NextResponse.json(issued.value)
   } catch (error) {
     console.error("Create retake error:", error)
     return NextResponse.json({ message: "Failed to prepare quiz retake" }, { status: 500 })

@@ -1,16 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useQuizStore } from '@/store/quiz-store';
 import FileUpload from '@/components/FileUpload';
 import QuizConfig from '@/components/QuizConfig';
 import QuizInterface from '@/components/QuizInterface';
 import ResultsDashboard from '@/components/ResultsDashboard';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { QuizConfig as QuizConfigType, Question, QuizResult } from '@/lib/types';
-import { createQuizResult } from '@/lib/quiz-utils';
+import { QuizConfig as QuizConfigType } from '@/lib/types';
 import { Plus, AlertCircle } from 'lucide-react';
 import AppNav from '@/components/AppNav';
 
@@ -39,28 +38,6 @@ function StepBadge({ current, step }: { current: Step; step: Step }) {
       {STEP_LABELS[step]}
     </span>
   );
-}
-
-/* ── Reads ?step=config and notifies parent ── */
-function SearchParamsReader({
-  onConfigStep,
-  onQuizStep,
-}: {
-  onConfigStep: () => void;
-  onQuizStep: () => void;
-}) {
-  const searchParams = useSearchParams();
-  const { documentText, session } = useQuizStore();
-  useEffect(() => {
-    const step = searchParams.get('step');
-    if (step === 'config' && documentText) {
-      onConfigStep();
-    } else if (step === 'quiz' && session) {
-      // Retake flow: a session was already started (e.g. from history).
-      onQuizStep();
-    }
-  }, [searchParams, documentText, session, onConfigStep, onQuizStep]);
-  return null;
 }
 
 /* ── Escalating status while questions generate (so the user never just stares) ── */
@@ -105,21 +82,25 @@ export default function UploadPage() {
   const {
     documentText, documentId, session, isAnalyzing, isGenerating, error,
     setDocumentText, setAnalyzing, setGenerating, setError,
-    startQuiz, endQuiz, resetQuiz,
+    startQuiz, resetQuiz, result, saveStatus, saveError, saveQuiz, recoveryError,
   } = useQuizStore();
 
-  const [step, setStep] = useState<Step>('upload');
-
-  // If the hero already analyzed a file and redirected here, skip straight to config
-  const [, setQuestions] = useState<Question[]>([]);
-  const [result, setResult] = useState<QuizResult | null>(null);
-  // Guards the quiz from being saved twice (e.g. time-up + manual finish racing).
-  const hasSavedRef = useRef(false);
+  // Entry points populate the store before navigating here. URL hints never
+  // override an active attempt, pending save, or completed result.
+  const step: Step = result ? 'results' : session ? 'quiz' : documentText ? 'config' : 'upload';
+  const generationRef = useRef<AbortController | null>(null);
+  useEffect(() => () => {
+    const controller = generationRef.current;
+    generationRef.current = null;
+    if (controller) {
+      controller.abort();
+      useQuizStore.getState().setGenerating(false);
+    }
+  }, []);
 
   const handleFileAnalyzed = (text: string) => {
     setDocumentText(text);
     setAnalyzing(false);
-    setStep('config');
   };
 
   const handleFileUpload = () => {
@@ -128,12 +109,14 @@ export default function UploadPage() {
   };
 
   const handleStartQuiz = async (config: QuizConfigType) => {
+    if (generationRef.current) return;
     if (!documentText) { setError('No document text available'); return; }
     setGenerating(true);
     setError(null);
     // Safety net: server maxDuration is 120s, so abort just past that rather
     // than spin forever if the connection stalls.
     const controller = new AbortController();
+    generationRef.current = controller;
     const timeout = setTimeout(() => controller.abort(), 125_000);
     try {
       const response = await fetch('/api/generate-questions', {
@@ -147,57 +130,29 @@ export default function UploadPage() {
         throw new Error(data.error || 'Failed to generate questions');
       }
       const data = await response.json();
-      setQuestions(data.questions);
-      hasSavedRef.current = false; // fresh quiz - allow exactly one save
-      startQuiz(data.questions, config, data.quizProof, data.documentId);
-      setStep('quiz');
+      if (!controller.signal.aborted) startQuiz(data.questions, data.config ?? config, data.quizProof, data.documentId, data.startedAt);
     } catch (err) {
       const name = (err as { name?: string })?.name;
       const message = (err as { message?: string })?.message ?? '';
-      setError(
+      if (generationRef.current === controller) setError(
         name === 'AbortError'
           ? 'Generation is taking too long - the AI service may be busy. Please try again in a moment.'
           : friendlyError(message)
       );
     } finally {
       clearTimeout(timeout);
-      setGenerating(false);
-    }
-  };
-
-  const handleQuizComplete = async () => {
-    // Run exactly once per quiz - both the time-up path and the manual
-    // "finish" path funnel here, and we must not POST a duplicate result.
-    if (hasSavedRef.current || !session) return;
-    hasSavedRef.current = true;
-    const timeTaken = Math.floor((Date.now() - session.startTime) / 1000);
-    const quizResult = createQuizResult(
-      session.questions, session.userAnswers, timeTaken, session.timeLimit, session.config,
-      session.confidences
-    );
-    setResult(quizResult);
-    try {
-      const response = await fetch('/api/save-quiz', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...quizResult, documentId, quizProof: session.quizProof }),
-      });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || 'Failed to save quiz result');
+      if (generationRef.current === controller) {
+        generationRef.current = null;
+        setGenerating(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save quiz result');
-    } finally {
-      endQuiz();
-      setStep('results');
     }
   };
 
   const handleNewQuiz = () => {
+    generationRef.current?.abort();
+    generationRef.current = null;
     resetQuiz();
-    setResult(null);
-    setStep('upload');
+    router.replace('/upload');
   };
 
   const navActions = (
@@ -212,20 +167,14 @@ export default function UploadPage() {
 
   return (
     <div className="min-h-screen bg-black flex flex-col text-white">
-      {/* Reads ?step=config from URL, wrapped in Suspense as required by Next.js */}
-      <Suspense fallback={null}>
-        <SearchParamsReader
-          onConfigStep={() => setStep('config')}
-          onQuizStep={() => { hasSavedRef.current = false; setStep('quiz'); }}
-        />
-      </Suspense>
-
       {/* Subtle ambient glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-white/[0.025] blur-3xl" />
       </div>
 
       <AppNav actions={navActions} />
+      {recoveryError && <p role="alert" className="relative z-10 mx-auto max-w-3xl px-4 py-3 text-amber-300 text-sm">{recoveryError}</p>}
+      {session && !recoveryError && <p className="relative z-10 mx-auto max-w-3xl px-4 py-2 text-white/60 text-sm">Your submitted answers are kept in this tab for refresh recovery. Exam timers keep running. Closing the tab or signing out clears recovery.</p>}
 
       {/* Step tracker */}
       <div className="relative z-10 flex justify-center gap-8 px-4 pb-2">
@@ -295,14 +244,27 @@ export default function UploadPage() {
           </div>
         )}
 
-        {step === 'quiz' && session && (
+        {step === 'quiz' && session && saveStatus === 'idle' && (
           <div className="fade-in">
-            <QuizInterface onComplete={handleQuizComplete} />
+            <QuizInterface key={session.quizProof} onComplete={() => void saveQuiz()} />
+          </div>
+        )}
+
+        {step === 'quiz' && saveStatus === 'saving' && (
+          <div role="status"><LoadingSpinner message="Saving your answers…" /></div>
+        )}
+        {step === 'quiz' && saveStatus === 'failed' && (
+          <div className="liquid-glass rounded-2xl p-6 space-y-4" role="alert">
+            <h1 className="text-xl font-semibold">Your quiz has not been confirmed saved</h1>
+            <p>{saveError}</p>
+            <p className="text-white/60 text-sm">Retry before starting a new quiz. A result already saved on the server can still be retrieved after the attempt expires.</p>
+            <button onClick={() => void saveQuiz(true)} className="bg-white text-black rounded-xl px-5 py-3 font-semibold">Retry save</button>
           </div>
         )}
 
         {step === 'results' && result && (
           <div className="fade-in">
+            <p role="status" className="text-green-400 text-sm mb-4">Saved to your history</p>
             <ResultsDashboard result={result} onRetake={handleNewQuiz} />
           </div>
         )}

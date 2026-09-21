@@ -13,6 +13,10 @@ interface FeedbackModalProps {
 }
 
 export default function FeedbackModal({ question, userAnswer, isOpen, onContinue }: FeedbackModalProps) {
+  return isOpen ? <FeedbackContent key={question.id} question={question} userAnswer={userAnswer} onContinue={onContinue} /> : null;
+}
+
+function FeedbackContent({ question, userAnswer, onContinue }: Omit<FeedbackModalProps, 'isOpen'>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const continueRef = useRef<HTMLButtonElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
@@ -23,21 +27,14 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
+  const requestRef = useRef<AbortController | null>(null);
 
-  /* Reset the ask state whenever a new question's feedback opens. */
-  useEffect(() => {
-    if (isOpen) {
-      setQuery('');
-      setAiAnswer(null);
-      setAiError(null);
-      setAsking(false);
-    }
-  }, [isOpen, question.id]);
+  // Each opening owns fresh state; closing/changing questions cancels its request.
+  useEffect(() => () => { requestRef.current?.abort(); requestRef.current = null; }, []);
 
   /* Dialog behaviour: focus the action on open, trap Tab within the dialog,
      close on Escape, restore focus to the trigger on close. */
   useEffect(() => {
-    if (!isOpen) return;
     previouslyFocused.current = document.activeElement as HTMLElement | null;
     continueRef.current?.focus();
 
@@ -66,9 +63,7 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
       document.removeEventListener('keydown', onKeyDown);
       previouslyFocused.current?.focus();
     };
-  }, [isOpen, onContinue]);
-
-  if (!isOpen) return null;
+  }, [onContinue]);
 
   const isCorrect = userAnswer === question.correctAnswer;
   const correctOption = question.options[question.correctAnswer];
@@ -76,6 +71,8 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
   const handleAsk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || asking) return;
+    const controller = new AbortController();
+    requestRef.current = controller;
     setAsking(true);
     setAiError(null);
     try {
@@ -83,15 +80,21 @@ export default function FeedbackModal({ question, userAnswer, isOpen, onContinue
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question, userAnswer, query: query.trim(), documentId }),
+        signal: controller.signal,
       });
       const data = await res.json();
+      if (controller.signal.aborted || requestRef.current !== controller) return;
       if (!res.ok) throw new Error(data.message || 'Failed to get an explanation');
       setAiAnswer(data.explanation);
       setQuery('');
     } catch (err) {
+      if (controller.signal.aborted || requestRef.current !== controller) return;
       setAiError(err instanceof Error ? err.message : 'Failed to get an explanation');
     } finally {
-      setAsking(false);
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        setAsking(false);
+      }
     }
   };
 

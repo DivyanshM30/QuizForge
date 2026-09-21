@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import AppNav from '@/components/AppNav';
@@ -59,25 +59,22 @@ export default function SettingsPage() {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
 
-  const fetchAccount = useCallback(async () => {
-    try {
-      const res = await fetch('/api/account');
-      if (!res.ok) throw new Error('Failed to load account');
-      const data = await res.json();
-      setAccount(data);
-      setName(data.name ?? '');
-      setReviewEnabled(Boolean(data.reviewEnabled));
-      setConfidenceEnabled(Boolean(data.confidenceEnabled));
-    } catch {
-      setBanner({ kind: 'error', text: 'Failed to load your account' });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (status === 'authenticated') fetchAccount();
-  }, [status, fetchAccount]);
+    if (status !== 'authenticated') return;
+    const controller = new AbortController();
+    fetch('/api/account', { signal: controller.signal })
+      .then(res => { if (!res.ok) throw new Error('Failed to load account'); return res.json(); })
+      .then(data => {
+        if (controller.signal.aborted) return;
+        setAccount(data);
+        setName(data.name ?? '');
+        setReviewEnabled(Boolean(data.reviewEnabled));
+        setConfidenceEnabled(Boolean(data.confidenceEnabled));
+      })
+      .catch(() => { if (!controller.signal.aborted) setBanner({ kind: 'error', text: 'Failed to load your account' }); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [status]);
 
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault();

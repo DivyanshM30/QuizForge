@@ -1,4 +1,5 @@
 'use client';
+import { useQuizStore } from '@/store/quiz-store';
 
 import { useRef, useEffect, useCallback } from 'react';
 import { Upload, Sparkles, ArrowRight, LayoutDashboard, X, Loader2 } from 'lucide-react';
@@ -62,6 +63,7 @@ export default function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const animRef = useRef<AnimFrameRef>({ id: null });
   const fadingOutRef = useRef(false);
+  const restartRef = useRef<{ id: ReturnType<typeof setTimeout> | null }>({ id: null });
 
   const { status } = useSession();
   const isLoggedIn = status === 'authenticated';
@@ -78,7 +80,7 @@ export default function HeroSection() {
 
   const {
     fileInputRef,
-    selectedFileRef,
+    selectedFile,
     fileName,
     isDragging,
     uploadState,
@@ -116,7 +118,7 @@ export default function HeroSection() {
     if (!video) return;
     cancelAnim(animRef.current);
     video.style.opacity = '0';
-    setTimeout(() => {
+    restartRef.current.id = setTimeout(() => {
       video.currentTime = 0;
       video.play().then(startFadeIn).catch(() => {});
     }, 100);
@@ -125,6 +127,8 @@ export default function HeroSection() {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    const animation = animRef.current;
+    const restart = restartRef.current;
     // Respect reduced-motion: don't autoplay or pull the full video down.
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const onCanPlay = () => video.play().then(startFadeIn).catch(() => {});
@@ -139,7 +143,9 @@ export default function HeroSection() {
       video.removeEventListener('canplay', onCanPlay);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('ended', handleEnded);
-      cancelAnim(animRef.current);
+      cancelAnim(animation);
+      if (restart.id !== null) clearTimeout(restart.id);
+      video.pause();
     };
   }, [startFadeIn, handleTimeUpdate, handleEnded]);
 
@@ -279,14 +285,14 @@ export default function HeroSection() {
               disabled={isBusy}
               onClick={(e) => { e.stopPropagation(); handleGenerate(); }}
               className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all flex-shrink-0 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
-                selectedFileRef.current && !isBusy && uploadState !== 'error'
+                selectedFile && !isBusy && uploadState !== 'error'
                   ? 'bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.15)]'
                   : 'bg-white/10 text-white/70 hover:bg-white/15'
               }`}
             >
               {isBusy ? (
                 <><Loader2 size={15} className="animate-spin" /> Working…</>
-              ) : selectedFileRef.current ? (
+              ) : selectedFile ? (
                 <><Sparkles size={15} /> Generate</>
               ) : (
                 <>Browse</>
@@ -313,6 +319,7 @@ export default function HeroSection() {
           <div className="flex justify-center">
             <Link
               href="/upload"
+              onClick={() => useQuizStore.getState().resetQuiz()}
               className="liquid-glass rounded-full px-8 py-3 text-white text-sm font-medium hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-2"
             >
               Start quizzing for free

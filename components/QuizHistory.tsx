@@ -2,11 +2,12 @@
 
 import { formatTime, accuracyTextClass } from '@/lib/quiz-utils';
 import { useHistory } from '@/hooks/useHistory';
+import { useQuizStore } from '@/store/quiz-store';
 import Link from 'next/link';
 import { Trash2, ChevronRight, FileText, Zap } from 'lucide-react';
 
 export default function QuizHistory() {
-  const { history, isLoading, error, refetch } = useHistory();
+  const { history, isLoading, error, refetch, nextCursor, loadMore } = useHistory();
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this quiz result?')) return;
@@ -17,7 +18,7 @@ export default function QuizHistory() {
     } catch { alert('An error occurred'); }
   };
 
-  if (isLoading) {
+  if (isLoading && history.length === 0) {
     return (
       <div className="flex justify-center py-20">
         <div className="w-8 h-8 border-2 border-white/10 border-t-white/60 rounded-full animate-spin" />
@@ -25,8 +26,8 @@ export default function QuizHistory() {
     );
   }
 
-  if (error) {
-    return <p className="text-center text-red-400 py-12 text-sm">{error}</p>;
+  if (error && history.length === 0) {
+    return <div role="alert" className="text-center text-red-400 py-12 text-sm">{error} <button onClick={() => void refetch()} className="underline">Retry</button></div>;
   }
 
   if (history.length === 0) {
@@ -41,6 +42,7 @@ export default function QuizHistory() {
         </div>
         <Link
           href="/upload"
+          onClick={() => useQuizStore.getState().resetQuiz()}
           className="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm cursor-pointer"
         >
           <Zap size={14} />
@@ -52,6 +54,7 @@ export default function QuizHistory() {
 
   return (
     <div className="space-y-3 max-w-4xl mx-auto">
+      {error && <div role="alert" className="text-red-400">{error} <button onClick={() => void refetch()} className="underline">Reload history</button></div>}
       {history.map((quiz) => (
         <div
           key={quiz.id}
@@ -76,7 +79,7 @@ export default function QuizHistory() {
               </span>
             </div>
             <p className="text-white/30 text-xs tabular-nums">
-              {new Date(quiz.createdAt || quiz.timestamp || Date.now()).toLocaleString()}
+              {new Date(quiz.createdAt || quiz.timestamp).toLocaleString()}
             </p>
             {quiz.weakTopics?.length > 0 && (
               <p className="text-white/30 text-xs truncate">
@@ -103,6 +106,7 @@ export default function QuizHistory() {
           </div>
         </div>
       ))}
+      {nextCursor && <button disabled={isLoading} onClick={() => void loadMore()} className="bg-white text-black px-5 py-3 rounded-xl disabled:opacity-50">{isLoading ? 'Loading…' : 'Load more quizzes'}</button>}
     </div>
   );
 }

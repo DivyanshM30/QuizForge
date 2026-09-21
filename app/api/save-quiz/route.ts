@@ -3,9 +3,10 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { questionHash, dueDateForWrong, REVIEW_QUEUE_CAP } from "@/lib/review"
-import { deriveQuizMetrics } from "@/lib/quiz-utils"
+import { deriveQuizMetrics, deserializeQuizResult } from "@/lib/quiz-utils"
 import { validateQuizSubmission } from "@/lib/quiz-submission"
 import { verifyQuizProof } from "@/lib/quiz-proof"
+import { openExam } from "@/lib/exam-token"
 import type { Confidence, Question } from "@/lib/types"
 
 export const dynamic = 'force-dynamic'
@@ -21,7 +22,12 @@ export async function POST(req: Request) {
       )
     }
 
-    const submission = validateQuizSubmission(await req.json())
+    const body = await req.json()
+    const isExam = typeof body?.quizProof === 'string' && body.quizProof.startsWith('exam1.')
+    const exam = isExam ? openExam(body.quizProof, session.user.id) : null
+    if (isExam && !exam) return NextResponse.json({ message: 'Exam verification failed' }, { status: 400 })
+    // The encrypted attempt is authoritative; client questions/configuration cannot alter grading.
+    const submission = validateQuizSubmission(exam ? { ...body, ...exam } : body)
     if (!submission.ok) {
       return NextResponse.json({ message: submission.error }, { status: 400 })
     }
@@ -33,10 +39,23 @@ export async function POST(req: Request) {
       confidences,
       quizProof,
     } = submission.value
+    if (config.mode === 'exam' && !isExam) return NextResponse.json({ message: 'Exam verification failed' }, { status: 400 })
 
-    const proofClaims = verifyQuizProof(quizProof, session.user.id, questions, config)
+    // Expired proofs may retrieve an existing save, but cannot create a new one.
+    const proofClaims = verifyQuizProof(quizProof, session.user.id, questions, config, Date.now(), { allowExpired: true })
     if (!proofClaims) {
       return NextResponse.json({ message: 'Quiz verification failed' }, { status: 400 })
+    }
+    const savedResponse = (result: NonNullable<Awaited<ReturnType<typeof prisma.quizResult.findUnique>>>, status = 200) =>
+      NextResponse.json({
+        message: 'Quiz result saved successfully',
+        result: { ...deserializeQuizResult(result), timestamp: new Date(result.createdAt).getTime() },
+      }, { status })
+    const findSaved = () => prisma.quizResult.findUnique({ where: { id: proofClaims.attemptId } })
+    const existing = await findSaved()
+    if (existing && existing.userId === session.user.id) return savedResponse(existing)
+    if (proofClaims.expiresAt <= Date.now()) {
+      return NextResponse.json({ message: 'This attempt expired before it was saved. Start a new quiz.' }, { status: 400 })
     }
     const timeLimit = config.timeLimit * 60
     const timeTaken = Math.min(
@@ -62,7 +81,7 @@ export async function POST(req: Request) {
       : null
     let documentId = linkedDocument?.id ?? null
 
-    const createResult = () => prisma.quizResult.create({
+    const insertResult = () => prisma.quizResult.create({
       data: {
         id: proofClaims.attemptId,
         userId,
@@ -82,6 +101,18 @@ export async function POST(req: Request) {
       },
     })
 
+    const createResult = async () => {
+      try {
+        return await insertResult()
+      } catch (error) {
+        if (documentId !== null && typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2003') {
+          documentId = null
+          return await insertResult()
+        }
+        throw error
+      }
+    }
+
     let result
     try {
       result = await createResult()
@@ -92,20 +123,11 @@ export async function POST(req: Request) {
         'code' in error &&
         error.code === 'P2002'
       ) {
+        const saved = await findSaved()
+        if (saved && saved.userId === session.user.id) return savedResponse(saved)
         return NextResponse.json({ message: 'Quiz result has already been saved' }, { status: 409 })
       }
-      if (
-        documentId !== null &&
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'P2003'
-      ) {
-        documentId = null
-        result = await createResult()
-      } else {
-        throw error
-      }
+      throw error
     }
 
     // ── Smart Review: enqueue every missed question (best-effort, opt-in) ──
@@ -148,10 +170,7 @@ export async function POST(req: Request) {
       console.error('Review enqueue failed:', e)
     }
 
-    return NextResponse.json(
-      { message: "Quiz result saved successfully", result },
-      { status: 201 }
-    )
+    return savedResponse(result, 201)
   } catch (error) {
     console.error("Save quiz error:", error)
     return NextResponse.json(

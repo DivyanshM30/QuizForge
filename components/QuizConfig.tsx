@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { QuizConfig } from '@/lib/types';
 import { QUIZ_LIMITS } from '@/lib/constants';
-import { Zap } from 'lucide-react';
+import { BookOpen, Check, ClipboardCheck, Zap } from 'lucide-react';
 
 interface QuizConfigProps {
   onStart: (config: QuizConfig) => void;
@@ -15,10 +15,11 @@ const TIME_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120];
 
 export default function QuizConfig({ onStart, isGenerating = false }: QuizConfigProps) {
   const [numQuestions, setNumQuestions] = useState(10);
+  const [mode, setMode] = useState<'practice' | 'exam'>('practice');
   const [timeLimit, setTimeLimit] = useState(15);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'mixed'>('medium');
 
-  const handleStart = () => onStart({ numQuestions, timeLimit, difficulty });
+  const handleStart = () => onStart({ numQuestions, timeLimit, difficulty, mode });
 
   const sliderPct =
     ((numQuestions - QUIZ_LIMITS.MIN_QUESTIONS) /
@@ -28,6 +29,38 @@ export default function QuizConfig({ onStart, isGenerating = false }: QuizConfig
   return (
     <div className="w-full max-w-2xl mx-auto">
       <div className="liquid-glass-card rounded-3xl p-8 space-y-8">
+        <div className="space-y-3">
+          <span id="quiz-mode-label" className="text-white/60 text-xs font-medium uppercase tracking-widest block">Mode</span>
+          <div role="group" aria-labelledby="quiz-mode-label" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {([
+              { value: 'practice', label: 'Practice', description: 'Feedback after each question', icon: BookOpen },
+              { value: 'exam', label: 'Exam simulation', description: 'Review answers, then get results', icon: ClipboardCheck },
+            ] as const).map(({ value, label, description, icon: Icon }) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={mode === value}
+                onClick={() => setMode(value)}
+                disabled={isGenerating}
+                className={`rounded-2xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed ${
+                  mode === value
+                    ? 'border-white/70 bg-white/10 text-white'
+                    : 'border-white/10 bg-white/[0.03] text-white/60 hover:border-white/30 hover:bg-white/[0.06]'
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <Icon size={18} aria-hidden="true" className="shrink-0" />
+                  <span className="text-sm font-semibold">{label}</span>
+                  <span className={`ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${mode === value ? 'border-white bg-white text-black' : 'border-white/25'}`} aria-hidden="true">
+                    {mode === value && <Check size={13} strokeWidth={3} />}
+                  </span>
+                </span>
+                <span className="mt-2 block text-xs leading-relaxed text-white/60">{description}</span>
+              </button>
+            ))}
+          </div>
+          {mode === 'exam' && <p className="text-sm text-white/60">Revisit and change answers until you submit or time runs out. No hints or feedback during the exam. Refreshing restores answers in this tab while the timer keeps running. Submission must reach the server within 30 seconds of the deadline.</p>}
+        </div>
 
         {/* Questions slider */}
         <div className="space-y-3">

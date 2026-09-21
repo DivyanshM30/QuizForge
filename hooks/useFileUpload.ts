@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { validateFile } from '@/lib/file-validation';
 import { useQuizStore } from '@/store/quiz-store';
@@ -13,6 +13,7 @@ interface UseFileUploadOptions {
    * Return `false` to abort (e.g. redirect an unauthenticated user to login).
    */
   onBeforeUpload?: (file: File) => boolean;
+  onComplete?: (text: string, file: File) => void;
 }
 
 /**
@@ -23,12 +24,14 @@ interface UseFileUploadOptions {
  *
  * Presentation (the pill markup) stays in each consumer - only the logic is shared.
  */
-export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
+export function useFileUpload({ onBeforeUpload, onComplete }: UseFileUploadOptions = {}) {
   const router = useRouter();
   const { setDocumentText, setDocumentId } = useQuizStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const selectedFileRef = useRef<File | null>(null); // stores the file before Generate is clicked
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
+  useEffect(() => () => requestRef.current?.abort(), []);
 
   const [fileName, setFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -40,6 +43,7 @@ export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
   /* Upload + analyze the file, then advance to the config step. */
   const processFile = useCallback(
     async (file: File) => {
+      if (requestRef.current) return;
       const validation = validateFile(file);
       if (!validation.valid) {
         setUploadError(validation.error || 'Invalid file');
@@ -48,6 +52,8 @@ export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
       }
 
       if (onBeforeUpload && onBeforeUpload(file) === false) return;
+      const controller = new AbortController();
+      requestRef.current = controller;
 
       setFileName(file.name);
       setUploadError(null);
@@ -57,21 +63,27 @@ export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
         const formData = new FormData();
         formData.append('file', file);
         setUploadState('analyzing');
-        const res = await fetch('/api/analyze-document', { method: 'POST', body: formData });
+        const res = await fetch('/api/analyze-document', { method: 'POST', body: formData, signal: controller.signal });
         if (!res.ok) {
           const data = await res.json();
           throw new Error(data.error || 'Failed to analyze document');
         }
         const data = await res.json();
+        if (controller.signal.aborted) return;
         setDocumentText(data.text);
         setDocumentId(data.documentId ?? null);
-        router.push('/upload?step=config');
+        if (onComplete) onComplete(data.text, file);
+        else router.push('/upload?step=config');
+        setUploadState('idle');
       } catch (err) {
+        if (controller.signal.aborted) return;
         setUploadError(err instanceof Error ? err.message : 'Upload failed');
         setUploadState('error');
+      } finally {
+        if (requestRef.current === controller) requestRef.current = null;
       }
     },
-    [onBeforeUpload, router, setDocumentText, setDocumentId]
+    [onBeforeUpload, onComplete, router, setDocumentText, setDocumentId]
   );
 
   /* Select a file without calling the API yet (Generate triggers the upload). */
@@ -80,10 +92,10 @@ export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
     if (!validation.valid) {
       setUploadError(validation.error || 'Invalid file');
       setUploadState('error');
-      selectedFileRef.current = null;
+      setSelectedFile(null);
       return;
     }
-    selectedFileRef.current = file;
+    setSelectedFile(file);
     setFileName(file.name);
     setUploadState('idle');
     setUploadError(null);
@@ -91,19 +103,13 @@ export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
 
   const handleGenerate = useCallback(() => {
     if (isBusy) return;
-    if (uploadState === 'error') {
-      setUploadState('idle');
-      setFileName(null);
-      selectedFileRef.current = null;
-      return;
-    }
-    if (selectedFileRef.current) {
-      processFile(selectedFileRef.current);
+    if (selectedFile) {
+      processFile(selectedFile);
     } else {
       // No file selected yet - open the picker
       fileInputRef.current?.click();
     }
-  }, [isBusy, uploadState, processFile]);
+  }, [isBusy, processFile, selectedFile]);
 
   const onFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,7 +138,8 @@ export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
   const clearFile = useCallback(() => {
     setFileName(null);
     setUploadState('idle');
-    selectedFileRef.current = null;
+    setUploadError(null);
+    setSelectedFile(null);
   }, []);
 
   const pillLabel = () => {
@@ -144,7 +151,9 @@ export function useFileUpload({ onBeforeUpload }: UseFileUploadOptions = {}) {
 
   return {
     fileInputRef,
-    selectedFileRef,
+    selectedFile,
+    uploadFile: processFile,
+    rejectFile: (message: string) => { setUploadError(message); setUploadState('error'); },
     fileName,
     isDragging,
     uploadState,

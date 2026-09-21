@@ -14,6 +14,7 @@ export interface Question {
 }
 
 export interface QuizConfig {
+  mode?: 'practice' | 'exam';
   numQuestions: number;
   timeLimit: number; // in minutes
   difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
@@ -22,13 +23,17 @@ export interface QuizConfig {
 }
 
 export type Confidence = 'sure' | 'unsure' | null;
+export type AttemptQuestion = Omit<Question, 'correctAnswer' | 'explanation'> &
+  Partial<Pick<Question, 'correctAnswer' | 'explanation'>>;
 
 export interface QuizSession {
-  questions: Question[];
+  questions: AttemptQuestion[];
   currentQuestionIndex: number;
   userAnswers: (string | null)[];
   confidences: Confidence[];
   startTime: number;
+  pausedAt?: number;
+  hardDeadline?: number;
   timeLimit: number; // in seconds
   config: QuizConfig;
   quizProof: string;

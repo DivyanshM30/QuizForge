@@ -5,57 +5,71 @@ import { useQuizStore } from '@/store/quiz-store';
 import type { Confidence } from '@/lib/types';
 import Timer from './Timer';
 import FeedbackModal from './FeedbackModal';
+import ExamInterface from './ExamInterface';
 
 interface QuizInterfaceProps {
   onComplete: () => void;
 }
 
 export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
-  const { session, getCurrentQuestion, submitAnswer, nextQuestion } = useQuizStore();
-
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [hasAnswered, setHasAnswered] = useState(false);
+  const { session, pauseQuiz, resumeQuiz } = useQuizStore();
 
   /* Confidence capture is opt-in (Settings → Study preferences). */
   const [confidenceEnabled, setConfidenceEnabled] = useState(false);
-  const [confidence, setConfidence] = useState<Confidence>(null);
   useEffect(() => {
-    fetch('/api/account')
+    const controller = new AbortController();
+    fetch('/api/account', { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setConfidenceEnabled(Boolean(d?.confidenceEnabled)))
-      .catch(() => setConfidenceEnabled(false));
+      .then((d) => { if (!controller.signal.aborted) setConfidenceEnabled(Boolean(d?.confidenceEnabled)); })
+      .catch(() => { if (!controller.signal.aborted) setConfidenceEnabled(false); });
+    return () => controller.abort();
   }, []);
+  if (!session) return null;
+  if (session.config.mode === 'exam') return <ExamInterface onComplete={onComplete} />;
+  if (session.pausedAt !== undefined) return <div className="max-w-3xl mx-auto liquid-glass-card rounded-3xl p-7 space-y-5">
+    <h1 className="text-xl font-semibold">Practice paused</h1>
+    <p className="text-white/60">Your question timer is paused. Resume before the attempt expires; at expiry, your answers are submitted automatically. The result&apos;s elapsed time includes breaks.</p>
+    <div className="flex flex-wrap items-center gap-3"><span>Attempt expires in</span><Timer onTimeUp={onComplete} /></div>
+    <button onClick={resumeQuiz} className="bg-white text-black rounded-xl px-5 py-3 font-semibold">Resume practice</button>
+  </div>;
+  return <div className="space-y-4">
+    <div className="max-w-3xl mx-auto flex justify-end"><button onClick={pauseQuiz} className="rounded-xl border border-white/20 px-4 py-2 text-sm">Pause practice</button></div>
+    <QuizQuestion key={`${session.quizProof}:${session.currentQuestionIndex}`} onComplete={onComplete} confidenceEnabled={confidenceEnabled} />
+  </div>;
+}
+
+function QuizQuestion({ onComplete, confidenceEnabled }: QuizInterfaceProps & { confidenceEnabled: boolean }) {
+  const { session, getCurrentQuestion, submitAnswer, nextQuestion, getRemainingTime } = useQuizStore();
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [confidence, setConfidence] = useState<Confidence>(null);
 
   const currentQuestion = getCurrentQuestion();
   const currentIndex = session?.currentQuestionIndex || 0;
   const totalQuestions = session?.questions.length || 0;
   const userAnswer = session?.userAnswers[currentIndex] || null;
 
-  useEffect(() => {
-    if (session) {
-      setSelectedAnswer(userAnswer);
-      setHasAnswered(userAnswer !== null);
-    }
-  }, [session, currentIndex, userAnswer]);
+  const hasAnswered = userAnswer !== null;
 
-  if (!session || !currentQuestion) return null;
+  if (!session || !currentQuestion || !currentQuestion.correctAnswer || currentQuestion.explanation === undefined) return null;
 
   const handleAnswerSelect = (answer: string) => { if (!hasAnswered) setSelectedAnswer(answer); };
 
   const handleSubmit = () => {
     if (!selectedAnswer || hasAnswered) return;
-    submitAnswer(selectedAnswer, confidenceEnabled ? confidence : null);
-    setHasAnswered(true);
-    setShowFeedback(true);
+    if (submitAnswer(selectedAnswer, confidenceEnabled ? confidence : null)) {
+      setShowFeedback(true);
+    } else if (getRemainingTime() === 0) {
+      onComplete();
+    }
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
     setSelectedAnswer(null);
     setConfidence(null);
-    setHasAnswered(false);
-    if (currentIndex < totalQuestions - 1) nextQuestion();
+    if (getRemainingTime() === 0) onComplete();
+    else if (currentIndex < totalQuestions - 1) nextQuestion();
     else onComplete();
   };
 
@@ -171,19 +185,19 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
           >
             Submit Answer
           </button>
-        ) : currentIndex < totalQuestions - 1 ? (
+        ) : (
           <button
             onClick={handleContinue}
             className="w-full bg-white/10 border border-white/20 text-white font-semibold py-3.5 rounded-xl
               hover:bg-white/15 transition-all cursor-pointer"
           >
-            Next Question →
+            {currentIndex < totalQuestions - 1 ? 'Next Question →' : 'Finish Quiz'}
           </button>
-        ) : null}
+        )}
       </div>
 
       <FeedbackModal
-        question={currentQuestion}
+        question={{ ...currentQuestion, correctAnswer: currentQuestion.correctAnswer, explanation: currentQuestion.explanation }}
         userAnswer={userAnswer}
         isOpen={showFeedback}
         onContinue={handleContinue}

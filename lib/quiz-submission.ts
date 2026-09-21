@@ -62,7 +62,9 @@ export function validateQuizConfig(
     (input.timeLimit as number) > QUIZ_LIMITS.MAX_TIME ||
     typeof difficulty !== 'string' ||
     !CONFIG_DIFFICULTIES.includes(difficulty as QuizConfig['difficulty']) ||
-    (input.cram !== undefined && typeof input.cram !== 'boolean')
+    (input.cram !== undefined && typeof input.cram !== 'boolean') ||
+    (input.mode !== undefined && input.mode !== 'practice' && input.mode !== 'exam') ||
+    (input.mode === 'exam' && input.cram === true)
   ) {
     return { ok: false, error: 'Quiz configuration is invalid' };
   }
@@ -74,11 +76,12 @@ export function validateQuizConfig(
       timeLimit: input.timeLimit as number,
       difficulty: difficulty as QuizConfig['difficulty'],
       ...(input.cram === true ? { cram: true } : {}),
+      ...(input.mode === 'exam' ? { mode: 'exam' as const } : {}),
     },
   };
 }
 
-function parseQuestion(value: unknown): Question | null {
+export function parseQuestion(value: unknown): Question | null {
   if (!isRecord(value) || !isRecord(value.options)) return null;
 
   if (
@@ -113,7 +116,9 @@ function parseQuestion(value: unknown): Question | null {
   };
 }
 
-export function validateQuizSubmission(input: unknown): ValidationResult {
+export function validateQuizContent(input: unknown):
+  | { ok: true; value: { questions: Question[]; config: QuizConfig } }
+  | { ok: false; error: string } {
   if (!isRecord(input)) {
     return { ok: false, error: 'Invalid quiz submission' };
   }
@@ -133,6 +138,17 @@ export function validateQuizSubmission(input: unknown): ValidationResult {
   if (questions.some((question) => question === null)) {
     return { ok: false, error: 'Quiz contains an invalid question' };
   }
+
+  const parsedConfig = validateQuizConfig(input.config, questions.length);
+  if (!parsedConfig.ok) return parsedConfig;
+  return { ok: true, value: { questions: questions as Question[], config: parsedConfig.value } };
+}
+
+export function validateQuizSubmission(input: unknown): ValidationResult {
+  const content = validateQuizContent(input);
+  if (!content.ok) return content;
+  if (!isRecord(input)) return { ok: false, error: 'Invalid quiz submission' };
+  const { questions, config } = content.value;
 
   if (
     !Array.isArray(input.userAnswers) ||
@@ -156,9 +172,6 @@ export function validateQuizSubmission(input: unknown): ValidationResult {
     confidences = input.confidences as Confidence[];
   }
 
-  const parsedConfig = validateQuizConfig(input.config, questions.length);
-  if (!parsedConfig.ok) return parsedConfig;
-
   if (!isBoundedString(input.quizProof, 600)) {
     return { ok: false, error: 'Quiz verification proof is missing or invalid' };
   }
@@ -169,7 +182,7 @@ export function validateQuizSubmission(input: unknown): ValidationResult {
       questions: questions as Question[],
       userAnswers: input.userAnswers as (Question['correctAnswer'] | null)[],
       confidences,
-      config: parsedConfig.value,
+      config,
       quizProof: input.quizProof,
     },
   };

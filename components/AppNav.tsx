@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { LogOut, History, Zap, LayoutDashboard, FileText, Settings } from 'lucide-react';
 import { QuizForgeLogo } from '@/components/icons';
+import { useQuizStore } from '@/store/quiz-store';
 
 interface AppNavProps {
   /** Optional extra actions injected to the right side */
@@ -60,6 +61,7 @@ export default function AppNav({ actions }: AppNavProps) {
               {pathname !== '/upload' && (
                 <Link
                   href="/upload"
+                  onClick={() => useQuizStore.getState().resetQuiz()}
                   className="flex items-center gap-1.5 liquid-glass rounded-full px-4 py-1.5 text-white text-sm font-medium hover:bg-white/5 transition-colors"
                 >
                   <Zap size={14} />

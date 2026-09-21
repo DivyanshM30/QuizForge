@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Question, QuizConfig } from './types';
 import { getErrorMessage } from './quiz-utils';
+import { parseQuestion } from './quiz-submission';
 
 const EXPLAIN_MAX_CONTEXT = 3000;
 
@@ -99,7 +100,7 @@ function sanitizeQuestions(raw: unknown): Question[] {
       ? (rawDifficulty as Question['difficulty'])
       : 'medium';
 
-    cleaned.push({
+    const parsed = parseQuestion({
       id: isNonEmptyString(q.id) ? q.id : `q${index + 1}`,
       question: q.question.trim(),
       options: {
@@ -113,6 +114,7 @@ function sanitizeQuestions(raw: unknown): Question[] {
       topic: isNonEmptyString(q.topic) ? q.topic.trim() : 'General',
       difficulty,
     });
+    if (parsed) cleaned.push(parsed);
   });
 
   return cleaned;

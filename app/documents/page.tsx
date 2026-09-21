@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useQuizStore } from '@/store/quiz-store';
@@ -33,21 +33,16 @@ export default function DocumentsPage() {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
 
-  const fetchDocuments = useCallback(async () => {
-    try {
-      const res = await fetch('/api/documents');
-      if (!res.ok) throw new Error('Failed to load documents');
-      setDocuments(await res.json());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load documents');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (status === 'authenticated') fetchDocuments();
-  }, [status, fetchDocuments]);
+    if (status !== 'authenticated') return;
+    const controller = new AbortController();
+    fetch('/api/documents', { signal: controller.signal })
+      .then(res => { if (!res.ok) throw new Error('Failed to load documents'); return res.json(); })
+      .then(data => { if (!controller.signal.aborted) setDocuments(data); })
+      .catch(err => { if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Failed to load documents'); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [status]);
 
   /* Load the stored text and jump straight to quiz config. */
   const handleNewQuiz = async (id: string) => {
@@ -143,6 +138,7 @@ export default function DocumentsPage() {
             </div>
             <Link
               href="/upload"
+              onClick={() => useQuizStore.getState().resetQuiz()}
               className="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors text-sm"
             >
               <Upload size={15} />
