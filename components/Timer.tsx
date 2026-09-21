@@ -13,7 +13,10 @@ interface TimerProps {
 export default function Timer({ onTimeUp }: TimerProps) {
   const { session, endQuiz } = useQuizStore();
   if (!session) return null;
-  return <Countdown key={session.quizProof} deadline={session.startTime + session.timeLimit * 1000} onTimeUp={onTimeUp ?? endQuiz} />;
+  const deadline = session.pausedAt !== undefined
+    ? session.hardDeadline ?? session.startTime + session.timeLimit * 1000
+    : Math.min(session.startTime + session.timeLimit * 1000, session.hardDeadline ?? Infinity);
+  return <Countdown key={`${session.quizProof}:${deadline}`} deadline={deadline} onTimeUp={onTimeUp ?? endQuiz} />;
 }
 
 function Countdown({ deadline, onTimeUp }: { deadline: number; onTimeUp: () => void }) {

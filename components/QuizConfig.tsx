@@ -59,7 +59,7 @@ export default function QuizConfig({ onStart, isGenerating = false }: QuizConfig
               </button>
             ))}
           </div>
-          {mode === 'exam' && <p className="text-sm text-white/60">Revisit and change answers until you submit or time runs out. No hints or feedback during the exam. Keep this page open: refreshing loses the attempt. Submission must reach the server within 30 seconds of the deadline.</p>}
+          {mode === 'exam' && <p className="text-sm text-white/60">Revisit and change answers until you submit or time runs out. No hints or feedback during the exam. Refreshing restores answers in this tab while the timer keeps running. Submission must reach the server within 30 seconds of the deadline.</p>}
         </div>
 
         {/* Questions slider */}

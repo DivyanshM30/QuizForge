@@ -3,6 +3,8 @@ import { AttemptQuestion, QuizConfig, QuizSession, QuizResult, Confidence } from
 import { remainingSeconds } from '@/lib/countdown';
 
 interface QuizStore {
+  ownerId: string | null;
+  recoveryError: string | null;
   session: QuizSession | null;
   documentText: string | null;
   documentId: string | null;
@@ -29,6 +31,8 @@ interface QuizStore {
   ) => void;
   submitAnswer: (answer: string, confidence?: Confidence) => boolean;
   nextQuestion: () => void;
+  pauseQuiz: () => void;
+  resumeQuiz: () => void;
   goToQuestion: (index: number) => boolean;
   endQuiz: () => void;
   resetQuiz: () => void;
@@ -37,6 +41,8 @@ interface QuizStore {
 }
 
 export const useQuizStore = create<QuizStore>((set, get) => ({
+  ownerId: null,
+  recoveryError: null,
   session: null,
   documentText: null,
   documentId: null,
@@ -98,12 +104,14 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
 
   startQuiz: (questions: AttemptQuestion[], config: QuizConfig, quizProof: string, documentId = null, startedAt?: number) => {
     const timeLimitSeconds = config.timeLimit * 60;
+    const issuedAt = typeof startedAt === 'number' && Number.isFinite(startedAt) ? startedAt : Date.now();
     const session: QuizSession = {
       questions,
       currentQuestionIndex: 0,
       userAnswers: new Array(questions.length).fill(null),
       confidences: new Array(questions.length).fill(null),
-      startTime: config.mode === 'exam' && Number.isFinite(startedAt) ? startedAt! : Date.now(),
+      startTime: issuedAt,
+      hardDeadline: issuedAt + timeLimitSeconds * 1000 + (config.mode === 'exam' ? 0 : 14 * 60_000),
       timeLimit: timeLimitSeconds,
       config,
       quizProof,
@@ -113,7 +121,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
 
   submitAnswer: (answer: string, confidence: Confidence = null) => {
     const { session } = get();
-    if (!session || get().saveStatus !== 'idle' || get().getRemainingTime() === 0) return false;
+    if (!session || session.pausedAt !== undefined || get().saveStatus !== 'idle' || get().getRemainingTime() === 0) return false;
 
     const newAnswers = [...session.userAnswers];
     newAnswers[session.currentQuestionIndex] = answer;
@@ -132,7 +140,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
 
   nextQuestion: () => {
     const { session } = get();
-    if (!session || get().saveStatus !== 'idle' || get().getRemainingTime() === 0) return;
+    if (!session || session.pausedAt !== undefined || get().saveStatus !== 'idle' || get().getRemainingTime() === 0) return;
 
     if (session.currentQuestionIndex < session.questions.length - 1) {
       set({
@@ -150,6 +158,18 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
         get().getRemainingTime() === 0 || !Number.isInteger(index) || index < 0 || index >= session.questions.length) return false;
     set({ session: { ...session, currentQuestionIndex: index } });
     return true;
+  },
+
+  pauseQuiz: () => {
+    const { session, saveStatus } = get();
+    if (!session || session.config.mode === 'exam' || session.pausedAt !== undefined || saveStatus !== 'idle' || get().getRemainingTime() === 0) return;
+    set({ session: { ...session, pausedAt: Date.now() } });
+  },
+
+  resumeQuiz: () => {
+    const { session, saveStatus } = get();
+    if (!session || session.config.mode === 'exam' || session.pausedAt === undefined || saveStatus !== 'idle') return;
+    set({ session: { ...session, startTime: session.startTime + Math.max(0, Date.now() - session.pausedAt), pausedAt: undefined } });
   },
 
   endQuiz: () => {
@@ -180,6 +200,9 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     const { session } = get();
     if (!session) return 0;
 
-    return remainingSeconds(session.startTime + session.timeLimit * 1000);
+    return Math.min(
+      remainingSeconds(session.startTime + session.timeLimit * 1000, session.pausedAt ?? Date.now()),
+      session.hardDeadline === undefined ? Infinity : remainingSeconds(session.hardDeadline)
+    );
   },
 }));

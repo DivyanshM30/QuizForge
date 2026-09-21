@@ -25,6 +25,7 @@ export function issueQuiz(userId: string, questions: unknown, config: unknown, d
     value: {
       ...parsed.value,
       documentId,
+      startedAt,
       quizProof,
     },
   };

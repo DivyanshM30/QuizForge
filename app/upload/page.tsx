@@ -82,7 +82,7 @@ export default function UploadPage() {
   const {
     documentText, documentId, session, isAnalyzing, isGenerating, error,
     setDocumentText, setAnalyzing, setGenerating, setError,
-    startQuiz, resetQuiz, result, saveStatus, saveError, saveQuiz,
+    startQuiz, resetQuiz, result, saveStatus, saveError, saveQuiz, recoveryError,
   } = useQuizStore();
 
   // Entry points populate the store before navigating here. URL hints never
@@ -173,6 +173,8 @@ export default function UploadPage() {
       </div>
 
       <AppNav actions={navActions} />
+      {recoveryError && <p role="alert" className="relative z-10 mx-auto max-w-3xl px-4 py-3 text-amber-300 text-sm">{recoveryError}</p>}
+      {session && !recoveryError && <p className="relative z-10 mx-auto max-w-3xl px-4 py-2 text-white/60 text-sm">Your submitted answers are kept in this tab for refresh recovery. Exam timers keep running. Closing the tab or signing out clears recovery.</p>}
 
       {/* Step tracker */}
       <div className="relative z-10 flex justify-center gap-8 px-4 pb-2">
@@ -255,7 +257,7 @@ export default function UploadPage() {
           <div className="liquid-glass rounded-2xl p-6 space-y-4" role="alert">
             <h1 className="text-xl font-semibold">Your quiz has not been confirmed saved</h1>
             <p>{saveError}</p>
-            <p className="text-white/60 text-sm">Your answers are kept while this page stays open. Retry before starting a new quiz.</p>
+            <p className="text-white/60 text-sm">Retry before starting a new quiz. A result already saved on the server can still be retrieved after the attempt expires.</p>
             <button onClick={() => void saveQuiz(true)} className="bg-white text-black rounded-xl px-5 py-3 font-semibold">Retry save</button>
           </div>
         )}

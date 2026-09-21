@@ -32,6 +32,8 @@ export interface QuizSession {
   userAnswers: (string | null)[];
   confidences: Confidence[];
   startTime: number;
+  pausedAt?: number;
+  hardDeadline?: number;
   timeLimit: number; // in seconds
   config: QuizConfig;
   quizProof: string;

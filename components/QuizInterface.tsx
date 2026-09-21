@@ -12,7 +12,7 @@ interface QuizInterfaceProps {
 }
 
 export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
-  const { session } = useQuizStore();
+  const { session, pauseQuiz, resumeQuiz } = useQuizStore();
 
   /* Confidence capture is opt-in (Settings → Study preferences). */
   const [confidenceEnabled, setConfidenceEnabled] = useState(false);
@@ -26,7 +26,16 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
   }, []);
   if (!session) return null;
   if (session.config.mode === 'exam') return <ExamInterface onComplete={onComplete} />;
-  return <QuizQuestion key={`${session.quizProof}:${session.currentQuestionIndex}`} onComplete={onComplete} confidenceEnabled={confidenceEnabled} />;
+  if (session.pausedAt !== undefined) return <div className="max-w-3xl mx-auto liquid-glass-card rounded-3xl p-7 space-y-5">
+    <h1 className="text-xl font-semibold">Practice paused</h1>
+    <p className="text-white/60">Your question timer is paused. Resume before the attempt expires; at expiry, your answers are submitted automatically. The result&apos;s elapsed time includes breaks.</p>
+    <div className="flex flex-wrap items-center gap-3"><span>Attempt expires in</span><Timer onTimeUp={onComplete} /></div>
+    <button onClick={resumeQuiz} className="bg-white text-black rounded-xl px-5 py-3 font-semibold">Resume practice</button>
+  </div>;
+  return <div className="space-y-4">
+    <div className="max-w-3xl mx-auto flex justify-end"><button onClick={pauseQuiz} className="rounded-xl border border-white/20 px-4 py-2 text-sm">Pause practice</button></div>
+    <QuizQuestion key={`${session.quizProof}:${session.currentQuestionIndex}`} onComplete={onComplete} confidenceEnabled={confidenceEnabled} />
+  </div>;
 }
 
 function QuizQuestion({ onComplete, confidenceEnabled }: QuizInterfaceProps & { confidenceEnabled: boolean }) {
