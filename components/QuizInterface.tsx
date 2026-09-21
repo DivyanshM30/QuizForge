@@ -29,7 +29,7 @@ export default function QuizInterface({ onComplete }: QuizInterfaceProps) {
   if (session.pausedAt !== undefined) return <div className="max-w-3xl mx-auto liquid-glass-card rounded-3xl p-7 space-y-5">
     <h1 className="text-xl font-semibold">Practice paused</h1>
     <p className="text-white/60">Your question timer is paused. Resume before the attempt expires; at expiry, your answers are submitted automatically. The result&apos;s elapsed time includes breaks.</p>
-    <div className="flex flex-wrap items-center gap-3"><span>Attempt expires in</span><Timer onTimeUp={onComplete} /></div>
+    <div className="flex flex-wrap items-center gap-3"><span>Attempt expires in</span><Timer /></div>
     <button onClick={resumeQuiz} className="bg-white text-black rounded-xl px-5 py-3 font-semibold">Resume practice</button>
   </div>;
   return <div className="space-y-4">
@@ -73,10 +73,6 @@ function QuizQuestion({ onComplete, confidenceEnabled }: QuizInterfaceProps & { 
     else onComplete();
   };
 
-  // Single completion path: let the parent's handleQuizComplete own saving and
-  // ending the quiz (it reads the session, so we must not null it here first).
-  const handleTimeUp = () => { onComplete(); };
-
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
   /* Option state → styling */
@@ -111,7 +107,7 @@ function QuizQuestion({ onComplete, confidenceEnabled }: QuizInterfaceProps & { 
             />
           </div>
         </div>
-        <Timer onTimeUp={handleTimeUp} />
+        <Timer />
       </div>
 
       {/* Question card */}

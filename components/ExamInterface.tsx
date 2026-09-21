@@ -18,7 +18,7 @@ export default function ExamInterface({ onComplete }: { onComplete: () => void }
   return <div className="max-w-3xl mx-auto space-y-5">
     <div className="flex justify-between items-center gap-3">
       <h1 className="text-xl font-semibold">Exam simulation</h1>
-      <Timer onTimeUp={onComplete} />
+      <Timer />
     </div>
     <p className="text-sm text-white/60" role="status">{answered} of {session.questions.length} answered. Results appear after submission.</p>
     <nav aria-label="Exam questions" className="flex flex-wrap gap-2">

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQuizStore } from '@/store/quiz-store';
 import { connectAttemptRecovery } from '@/lib/attempt-recovery';
+import AttemptDeadline from './AttemptDeadline';
 
 export default function AttemptRecovery({ children }: { children: React.ReactNode }) {
   const { data, status } = useSession();
@@ -21,5 +22,5 @@ export default function AttemptRecovery({ children }: { children: React.ReactNod
   if ((status === 'loading' && ownerId !== null) || (status !== 'loading' && ownerId !== userId)) {
     return <p role="status" className="p-8 text-center">Restoring your session…</p>;
   }
-  return children;
+  return <>{status === 'authenticated' && userId && ownerId === userId && <AttemptDeadline ownerId={userId} />}{children}</>;
 }
