@@ -50,3 +50,23 @@ it('presents the next question as unanswered while retaining the previous answer
   expect(render()).toContain('Submit Answer');
   expect(state().session?.userAnswers).toEqual(['a', null]);
 });
+
+it('hides practice questions while paused and restores the submitted question on resume', () => {
+  state().startQuiz([question], { numQuestions: 1, timeLimit: 5, difficulty: 'easy' }, 'proof');
+  state().submitAnswer('b');
+  state().pauseQuiz();
+  const paused = render();
+  expect(paused).toContain('Practice paused');
+  expect(paused).toContain('Resume practice');
+  expect(paused).toContain('Attempt expires in');
+  expect(paused).not.toContain('Question?');
+  state().resumeQuiz();
+  expect(render()).toContain('Finish Quiz');
+  expect(render()).toContain('Pause practice');
+});
+
+it('never offers pause controls in exam mode', () => {
+  state().startQuiz([question], { numQuestions: 1, timeLimit: 5, difficulty: 'easy', mode: 'exam' }, 'proof');
+  expect(render()).not.toContain('Pause practice');
+  expect(render()).not.toContain('Resume practice');
+});
