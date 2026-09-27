@@ -34,7 +34,12 @@ export function parseAttemptDraft(raw: string, ownerId: string) {
     return exam ? { id: parsed.id, question: parsed.question, options: parsed.options, topic: parsed.topic, difficulty: parsed.difficulty } : parsed;
   });
   const session: QuizSession = {
-    questions, config: config.value, startTime: s.startTime, timeLimit: s.timeLimit,
+    questions, config: {
+      ...config.value,
+      // Keep explicitly supplied defaults so a restored retry retains its payload.
+      ...(record(s.config) && s.config.mode === 'practice' ? { mode: 'practice' as const } : {}),
+      ...(record(s.config) && s.config.cram === false ? { cram: false } : {}),
+    }, startTime: s.startTime, timeLimit: s.timeLimit,
     hardDeadline: s.hardDeadline, pausedAt: s.pausedAt as number | undefined,
     currentQuestionIndex: s.currentQuestionIndex as number, quizProof: s.quizProof,
     userAnswers: s.userAnswers, confidences: s.confidences,
@@ -61,6 +66,8 @@ export function connectAttemptRecovery(ownerId: string | null, storage: StorageA
   }
   const persist = () => {
     const current = useQuizStore.getState();
+    // An obsolete connection must never write another account's attempt.
+    if (current.ownerId !== ownerId) return;
     try {
       if (!ownerId || !current.session) storage.removeItem(ATTEMPT_STORAGE_KEY);
       else storage.setItem(ATTEMPT_STORAGE_KEY, JSON.stringify({ version: 1, ownerId, session: current.session, documentId: current.documentId, saveStatus: current.saveStatus }));
@@ -71,6 +78,10 @@ export function connectAttemptRecovery(ownerId: string | null, storage: StorageA
       useQuizStore.setState({ recoveryError: 'Refresh recovery is unavailable in this tab. Keep this page open until your result is saved.' });
     }
   };
+  // Effects may reconnect after auth revalidation or a remount. Capture changes
+  // made while disconnected instead of waiting for the next answer to be edited.
+  const connected = useQuizStore.getState();
+  if (connected.session || !connected.recoveryError) persist();
   return useQuizStore.subscribe((current, previous) => {
     if (current.session !== previous.session || current.saveStatus !== previous.saveStatus || current.documentId !== previous.documentId) persist();
   });

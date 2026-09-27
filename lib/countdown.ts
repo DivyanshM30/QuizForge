@@ -1,3 +1,12 @@
+import type { QuizSession } from './types';
+
+export function attemptDeadline(session: QuizSession) {
+  const questionDeadline = session.startTime + session.timeLimit * 1000;
+  return session.pausedAt !== undefined
+    ? session.hardDeadline ?? questionDeadline
+    : Math.min(questionDeadline, session.hardDeadline ?? Infinity);
+}
+
 export function remainingSeconds(deadline: number, now = Date.now()) {
   return Math.max(0, Math.ceil((deadline - now) / 1000));
 }

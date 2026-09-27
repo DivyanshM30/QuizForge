@@ -168,7 +168,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
 
   resumeQuiz: () => {
     const { session, saveStatus } = get();
-    if (!session || session.config.mode === 'exam' || session.pausedAt === undefined || saveStatus !== 'idle') return;
+    if (!session || session.config.mode === 'exam' || session.pausedAt === undefined || saveStatus !== 'idle' || get().getRemainingTime() === 0) return;
     set({ session: { ...session, startTime: session.startTime + Math.max(0, Date.now() - session.pausedAt), pausedAt: undefined } });
   },
 

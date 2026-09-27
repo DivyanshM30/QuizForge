@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ATTEMPT_STORAGE_KEY, connectAttemptRecovery, parseAttemptDraft } from '@/lib/attempt-recovery';
+import { watchAttemptDeadline } from '@/lib/attempt-deadline';
 import { useQuizStore } from '@/store/quiz-store';
 import type { Question } from '@/lib/types';
 
@@ -57,6 +58,27 @@ it('preserves a practice pause through refresh and resumes without resetting the
   vi.setSystemTime(limit!);
   expect(state().getRemainingTime()).toBe(0);
   expect(state().submitAnswer('a')).toBe(false);
+});
+
+it('cannot resume an expired pause or extend its hard deadline with repeated pauses', () => {
+  state().startQuiz(questions, config, 'proof');
+  const deadline = state().session!.hardDeadline!;
+  vi.setSystemTime(160_000);
+  state().pauseQuiz();
+  vi.setSystemTime(220_000);
+  state().pauseQuiz();
+  expect(state().session!.pausedAt).toBe(160_000);
+  state().resumeQuiz();
+  expect(state().getRemainingTime()).toBe(240);
+  vi.setSystemTime(280_000);
+  state().pauseQuiz();
+  vi.setSystemTime(deadline);
+  reload();
+  const expired = state().session;
+  state().resumeQuiz();
+  expect(state().session).toBe(expired);
+  expect(state().getRemainingTime()).toBe(0);
+  expect(state().session!.hardDeadline).toBe(deadline);
 });
 
 it('never pauses or extends an exam on refresh and strips any stored answer key', () => {
@@ -118,4 +140,111 @@ it('discards malformed snapshots instead of crashing or restoring partial state'
   draft.session.currentQuestionIndex = 0;
   draft.session.userAnswers = [];
   expect(() => parseAttemptDraft(JSON.stringify(draft), 'user')).toThrow();
+});
+
+it.each(['practice', 'exam'] as const)('restores a failed %s save with the same payload and no automatic retry', async mode => {
+  const fetcher = vi.fn().mockRejectedValueOnce(new Error('Offline'))
+    .mockResolvedValueOnce(Response.json({ result: { id: 'saved' } }));
+  vi.stubGlobal('fetch', fetcher);
+  state().startQuiz(questions, { ...config, mode, cram: false }, 'proof', 'doc');
+  state().submitAnswer('b', 'unsure');
+  await state().saveQuiz();
+  reload();
+  expect(state().saveStatus).toBe('failed');
+  const frozen = state().session;
+  state().pauseQuiz();
+  state().resumeQuiz();
+  state().nextQuestion();
+  expect(state().goToQuestion(1)).toBe(false);
+  expect(state().submitAnswer('a')).toBe(false);
+  expect(state().session).toBe(frozen);
+  await state().saveQuiz();
+  expect(fetcher).toHaveBeenCalledOnce();
+  await state().saveQuiz(true);
+  expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual(JSON.parse(fetcher.mock.calls[0][1].body));
+  expect(values.has(ATTEMPT_STORAGE_KEY)).toBe(false);
+});
+
+it('persists the latest state when reconnecting after an unsubscribed interval', () => {
+  state().startQuiz(questions, config, 'proof');
+  stop();
+  state().submitAnswer('c', 'sure');
+  stop = connectAttemptRecovery('user', storage);
+  reload();
+  expect(state().session!.userAnswers[0]).toBe('c');
+  expect(state().session!.confidences[0]).toBe('sure');
+});
+
+it('does not resurrect an attempt reset while recovery was disconnected', () => {
+  state().startQuiz(questions, config, 'proof');
+  stop();
+  state().resetQuiz();
+  stop = connectAttemptRecovery('user', storage);
+  reload();
+  expect(state().session).toBeNull();
+  expect(values.has(ATTEMPT_STORAGE_KEY)).toBe(false);
+});
+
+it.each(['success', 'failure'])('ignores an old account save %s after switching accounts', async outcome => {
+  let resolve!: (response: Response) => void;
+  let reject!: (error: Error) => void;
+  vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((r, j) => { resolve = r; reject = j; })));
+  state().startQuiz(questions, config, 'old-proof');
+  const pending = state().saveQuiz();
+  stop();
+  stop = connectAttemptRecovery('other', storage);
+  state().startQuiz(questions, config, 'new-proof');
+  if (outcome === 'success') resolve(Response.json({ result: { id: 'old-result' } }));
+  else reject(new Error('old failure'));
+  await pending;
+  expect(state().session!.quizProof).toBe('new-proof');
+  expect(state().result).toBeNull();
+  expect(state().saveStatus).toBe('idle');
+  expect(JSON.parse(values.get(ATTEMPT_STORAGE_KEY)!)).toMatchObject({ ownerId: 'other', session: { quizProof: 'new-proof' } });
+});
+
+it('does not let a stale recovery subscription relabel another account draft', () => {
+  state().startQuiz(questions, config, 'old-proof');
+  const oldStop = stop;
+  stop = connectAttemptRecovery('other', storage);
+  const writes = vi.spyOn(storage, 'setItem');
+  try {
+    state().startQuiz(questions, config, 'new-proof');
+    expect(writes).toHaveBeenCalled();
+    for (const [, raw] of writes.mock.calls) {
+      expect(JSON.parse(raw).ownerId).toBe('other');
+    }
+    oldStop();
+    reload('other');
+    expect(state().session!.quizProof).toBe('new-proof');
+    expect(state().ownerId).toBe('other');
+  } finally { oldStop(); }
+});
+
+it.each(['practice', 'exam', 'paused practice'] as const)('submits an overdue restored %s once and restores a failed submission for retry', async mode => {
+  const fetcher = vi.fn().mockRejectedValueOnce(new Error('Offline'))
+    .mockResolvedValueOnce(Response.json({ result: { id: 'saved' } }));
+  vi.stubGlobal('fetch', fetcher);
+  state().startQuiz(questions, { ...config, mode: mode === 'exam' ? 'exam' : 'practice' }, 'proof');
+  state().submitAnswer('d', 'sure');
+  if (mode === 'paused practice') state().pauseQuiz();
+  const expires = mode === 'paused practice' ? state().session!.hardDeadline! : 400_000;
+  vi.setSystemTime(expires + 1);
+  reload();
+  let stopDeadline = watchAttemptDeadline('user');
+  try {
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(state().saveStatus).toBe('failed');
+    stopDeadline();
+    reload();
+    stopDeadline = watchAttemptDeadline('user');
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(state().submitAnswer('a')).toBe(false);
+    await state().saveQuiz(true);
+    expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual(JSON.parse(fetcher.mock.calls[0][1].body));
+    expect(state().result?.id).toBe('saved');
+    expect(values.has(ATTEMPT_STORAGE_KEY)).toBe(false);
+  } finally { stopDeadline(); }
 });

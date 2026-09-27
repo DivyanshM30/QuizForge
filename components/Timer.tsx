@@ -1,29 +1,21 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuizStore } from '@/store/quiz-store';
 import { formatTime } from '@/lib/quiz-utils';
 import { Clock } from 'lucide-react';
-import { remainingSeconds, subscribeCountdown } from '@/lib/countdown';
+import { attemptDeadline, remainingSeconds, subscribeCountdown } from '@/lib/countdown';
 
-interface TimerProps {
-  onTimeUp?: () => void;
-}
-
-export default function Timer({ onTimeUp }: TimerProps) {
-  const { session, endQuiz } = useQuizStore();
+export default function Timer() {
+  const { session } = useQuizStore();
   if (!session) return null;
-  const deadline = session.pausedAt !== undefined
-    ? session.hardDeadline ?? session.startTime + session.timeLimit * 1000
-    : Math.min(session.startTime + session.timeLimit * 1000, session.hardDeadline ?? Infinity);
-  return <Countdown key={`${session.quizProof}:${deadline}`} deadline={deadline} onTimeUp={onTimeUp ?? endQuiz} />;
+  const deadline = attemptDeadline(session);
+  return <Countdown key={`${session.quizProof}:${deadline}`} deadline={deadline} />;
 }
 
-function Countdown({ deadline, onTimeUp }: { deadline: number; onTimeUp: () => void }) {
+function Countdown({ deadline }: { deadline: number }) {
   const [remaining, setRemaining] = useState(() => remainingSeconds(deadline));
-  const callbackRef = useRef(onTimeUp);
-  useEffect(() => { callbackRef.current = onTimeUp; }, [onTimeUp]);
-  useEffect(() => subscribeCountdown(deadline, setRemaining, () => callbackRef.current()), [deadline]);
+  useEffect(() => subscribeCountdown(deadline, setRemaining, () => {}), [deadline]);
 
   const isCritical = remaining < 60;
   const isWarning = remaining < 5 * 60;
