@@ -6,6 +6,8 @@ import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
+class InvalidResetTokenError extends Error {}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
@@ -34,7 +36,7 @@ export async function POST(req: NextRequest) {
       where: { tokenHash },
     });
 
-    if (!record || record.expiresAt < new Date()) {
+    if (!record || record.expiresAt <= new Date()) {
       return NextResponse.json(
         { message: 'This reset link is invalid or has expired. Please request a new one.' },
         { status: 400 }
@@ -42,16 +44,26 @@ export async function POST(req: NextRequest) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await prisma.$transaction([
-      prisma.user.update({
+    await prisma.$transaction(async (tx) => {
+      // Lock/write the user before tokens, matching change-password's lock order.
+      // This write MUST roll back if the token cannot be consumed below.
+      await tx.user.update({
         where: { id: record.userId },
         data: { password: hashedPassword },
-      }),
-      prisma.passwordResetToken.deleteMany({ where: { userId: record.userId } }),
-    ]);
+      });
+      // A pre-hash lookup is not a reservation; only one transaction may consume it.
+      const consumed = await tx.passwordResetToken.deleteMany({
+        where: { id: record.id, tokenHash, expiresAt: { gt: new Date() } },
+      });
+      if (consumed.count !== 1) throw new InvalidResetTokenError();
+      await tx.passwordResetToken.deleteMany({ where: { userId: record.userId } });
+    });
 
     return NextResponse.json({ message: 'Password updated - you can now sign in.' });
   } catch (error) {
+    if (error instanceof InvalidResetTokenError) {
+      return NextResponse.json({ message: 'This reset link is invalid or has expired. Please request a new one.' }, { status: 400 });
+    }
     console.error('Reset-password error:', error);
     return NextResponse.json(
       { message: 'An error occurred. Please try again.' },

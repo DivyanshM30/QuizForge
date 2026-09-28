@@ -117,6 +117,8 @@ export default function SettingsPage() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      // The successful write revokes this session too; make reauthentication explicit.
+      await signOut({ callbackUrl: '/login' });
     } catch (err) {
       setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Failed to change password' });
     } finally {
