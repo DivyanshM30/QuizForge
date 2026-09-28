@@ -32,6 +32,9 @@ describe('Google authentication callback', () => {
     mocks.findFirst.mockReset();
     mocks.update.mockReset();
     mocks.create.mockReset();
+    mocks.update.mockImplementation(async ({ data }) => ({
+      id: 'linked-user', password: 'bcrypt-hash', ...data,
+    }));
   });
 
   it('does not merge a verified Google email into a credentials account', async () => {

@@ -47,12 +47,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Current password is incorrect' }, { status: 400 });
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { password: await bcrypt.hash(newPassword, 10) },
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const changed = await prisma.$transaction(async (tx) => {
+      // A password reset/change that won while bcrypt ran must not be undone.
+      const result = await tx.user.updateMany({
+        where: { id: user.id, password: user.password },
+        data: { password: hashedPassword },
+      });
+      if (result.count !== 1) return false;
+      await tx.passwordResetToken.deleteMany({ where: { userId: user.id } });
+      return true;
     });
+    if (!changed) return NextResponse.json({ message: 'Your credentials changed. Sign in again before changing your password.' }, { status: 409 });
 
-    return NextResponse.json({ message: 'Password updated' });
+    return NextResponse.json({ message: 'Password updated. Sign in again with your new password.' });
   } catch (error) {
     console.error('Change password error:', error);
     return NextResponse.json({ message: 'Failed to change password' }, { status: 500 });

@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { credentialStamp, matchesCredentialStamp } from "@/lib/session-credentials"
 import {
   canUseGoogleIdentity,
   normalizeEmail,
@@ -29,7 +30,7 @@ export const authOptions: NextAuthOptions = {
         const email = normalizeEmail(credentials.email)
         const user = await prisma.user.findFirst({
           where: { email: { equals: email, mode: 'insensitive' } },
-          select: { id: true, email: true, name: true, password: true },
+          select: { id: true, email: true, name: true, password: true, googleSubject: true },
         })
 
         // user.password is null for OAuth-only accounts - they must sign in
@@ -48,6 +49,8 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          // Bind the exact credential that passed bcrypt, not a later DB read.
+          credentialStamp: credentialStamp(user),
         }
       }
     }),
@@ -85,32 +88,38 @@ export const authOptions: NextAuthOptions = {
         if (!canUseGoogleIdentity(existingUser, googleProfile.sub)) return false
         if (existingBySubject && normalizeEmail(existingBySubject.email) !== email) return false
 
-        if (existingUser) {
-          await prisma.user.update({
+        const dbUser = existingUser
+          ? await prisma.user.update({
             where: { id: existingUser.id },
             data: {
               googleSubject: googleProfile.sub,
               ...(user.name ? { name: user.name } : {}),
             },
           })
-        } else {
-          await prisma.user.create({
+          : await prisma.user.create({
             data: { email, name: user.name ?? null, googleSubject: googleProfile.sub },
           })
-        }
 
+        user.id = dbUser.id
+        user.credentialStamp = credentialStamp(dbUser)
         user.email = email
       }
       return true
     },
-    // Point token.sub at OUR user id (Google would otherwise leave its own sub).
-    jwt: async ({ token, account }) => {
-      if (account?.provider === "google") {
-        const dbUser = await prisma.user.findUnique({
-          where: { googleSubject: account.providerAccountId },
-        })
-        if (dbUser) token.sub = dbUser.id
+    jwt: async ({ token, user, account }) => {
+      if (user && account) {
+        token.sub = user.id
+        token.credentialStamp = user.credentialStamp
       }
+      // No legacy backfill or client update payload can renew revoked authority.
+      if (!token.sub || typeof token.credentialStamp !== 'string') throw new Error('Session revoked')
+      const current = await prisma.user.findUnique({
+        where: { id: token.sub },
+        select: { id: true, password: true, googleSubject: true },
+      })
+      if (!current || !matchesCredentialStamp(token.credentialStamp, current)) throw new Error('Session revoked')
+      // NextAuth v4 catches rejection, clears the cookie and returns no session.
+      // A DB error must also propagate; never fall back to the stale token.
       return token
     },
     session: async ({ session, token }) => {
