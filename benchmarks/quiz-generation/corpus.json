@@ -1,0 +1,35 @@
+[
+  {
+    "id": "data-structures",
+    "title": "Synthetic data structures notes",
+    "facts": [
+      ["Which structure removes the most recently added item first?", "Stack", "Queue", "Set", "Graph", "A stack uses last-in, first-out order."],
+      ["Which structure removes the earliest added item first?", "Queue", "Stack", "Tree", "Set", "A queue uses first-in, first-out order."],
+      ["Which traversal visits tree nodes level by level?", "Breadth-first", "In-order", "Post-order", "Pre-order", "Breadth-first traversal visits successive levels."],
+      ["Which search requires sorted input?", "Binary search", "Linear search", "Depth-first search", "Breadth-first search", "Binary search halves a sorted search interval."],
+      ["Which characters begin a JSON Markdown fence?", "```json", "<json>", "[json]", "(json)", "The literal marker ```json begins the block; ``` closes it."]
+    ]
+  },
+  {
+    "id": "networking",
+    "title": "Synthetic networking notes",
+    "facts": [
+      ["Which system resolves domain names?", "DNS", "TCP", "UDP", "HTTP", "DNS resolves domain names to records such as IP addresses."],
+      ["Which transport provides an ordered byte stream?", "TCP", "UDP", "IP", "ICMP", "TCP provides a reliable, ordered byte stream."],
+      ["Which HTTP method conventionally retrieves a resource?", "GET", "POST", "PATCH", "DELETE", "GET requests a representation of a resource."],
+      ["Which protocol adds transport encryption to HTTP?", "TLS", "DNS", "ARP", "ICMP", "HTTPS uses TLS to encrypt transport."],
+      ["Which marker labels a JSON example in these notes?", "```json", "<sample>", "[sample]", "(sample)", "The example uses ```json and ends with ```; both are literal text."]
+    ]
+  },
+  {
+    "id": "databases",
+    "title": "Synthetic database notes",
+    "facts": [
+      ["Which key uniquely identifies a table row?", "Primary key", "Foreign key", "Sort key", "Display key", "A primary key uniquely identifies a row."],
+      ["Which SQL clause filters rows before grouping?", "WHERE", "HAVING", "ORDER BY", "LIMIT", "WHERE filters input rows before grouping."],
+      ["Which operation reverses an uncommitted transaction?", "ROLLBACK", "COMMIT", "SELECT", "INSERT", "ROLLBACK abandons an uncommitted transaction."],
+      ["Which join preserves every row from the left table?", "LEFT JOIN", "INNER JOIN", "CROSS JOIN", "SELF JOIN", "A left join preserves unmatched rows from the left table."],
+      ["Which literal marker opens the notes' JSON sample?", "```json", "<row>", "[row]", "(row)", "The literal delimiters are ```json and ```; they are part of the example."]
+    ]
+  }
+]

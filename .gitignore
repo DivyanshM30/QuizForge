@@ -53,7 +53,13 @@ FEATURES_ROADMAP.md
 PR_DESCRIPTION.md
 QuizForge_Interview_Dossier.md
 
-# Local audits and planning notes (keep future notes in docs/local/)
-/docs/CODE_AUDIT.md
-/docs/IMPROVEMENT_PLAN.md
-/docs/local/
+# perch
+.perch/
+perch/
+
+# documentation: the numbered guides and the index are tracked; local scratch,
+# audit artifacts and build copies are not
+docs/local/
+docs/CODE_AUDIT.md
+docs/IMPROVEMENT_PLAN.md
+

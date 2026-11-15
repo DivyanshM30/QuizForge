@@ -120,6 +120,17 @@ function sanitizeQuestions(raw: unknown): Question[] {
   return cleaned;
 }
 
+/** Remove only an enclosing Markdown fence; preserve literal fences in MCQs. */
+function parseQuestionResponse(text: string, requestedCount: number): Question[] {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/^```[ \t]*(?:json)?\s*([\s\S]*?)\s*```$/i);
+  const questions = sanitizeQuestions(JSON.parse(fenced ? fenced[1] : trimmed));
+  if (questions.length < requestedCount) {
+    throw new Error(`Generated only ${questions.length} valid questions, expected ${requestedCount}`);
+  }
+  return questions.slice(0, requestedCount);
+}
+
 export async function generateQuestions(
   documentText: string,
   config: QuizConfig
@@ -166,24 +177,7 @@ IMPORTANT:
 
   try {
     const text = await generateWithFallbackModels(prompt);
-
-    // Clean the response - remove markdown code blocks if present
-    let cleanedText = text.trim();
-    if (cleanedText.startsWith('```json')) {
-      cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (cleanedText.startsWith('```')) {
-      cleanedText = cleanedText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-    }
-
-    // Validate/repair the untrusted model output before trusting it
-    const validatedQuestions = sanitizeQuestions(JSON.parse(cleanedText));
-
-    // Ensure we have at least the requested number of usable questions
-    if (validatedQuestions.length < config.numQuestions) {
-      throw new Error(`Generated only ${validatedQuestions.length} valid questions, expected ${config.numQuestions}`);
-    }
-
-    return validatedQuestions.slice(0, config.numQuestions);
+    return parseQuestionResponse(text, config.numQuestions);
   } catch (error) {
     console.error('Error generating questions:', error);
 
@@ -207,18 +201,8 @@ ${documentText.substring(0, 30000)}
 
 Format: [{"id":"q1","question":"...","options":{"a":"...","b":"...","c":"...","d":"..."},"correctAnswer":"a","explanation":"...","topic":"...","difficulty":"easy"}]`;
 
-  const text = (await generateWithFallbackModels(prompt))
-    .trim()
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '');
-
-  const questions = sanitizeQuestions(JSON.parse(text));
-  if (questions.length < config.numQuestions) {
-    throw new Error(
-      `Generated only ${questions.length} valid questions, expected ${config.numQuestions}`
-    );
-  }
-  return questions.slice(0, config.numQuestions);
+  const text = await generateWithFallbackModels(prompt);
+  return parseQuestionResponse(text, config.numQuestions);
 }
 
 /**
