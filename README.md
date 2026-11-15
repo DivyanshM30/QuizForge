@@ -6,6 +6,27 @@
 
 ---
 
+## 📚 Documentation
+
+Detailed, code-verified guides live in [`docs/`](docs/README.md). Start with the [documentation index](docs/README.md), which offers reading paths for setup, architecture, contributing, troubleshooting, and interview preparation.
+
+| Guide | Covers |
+|---|---|
+| [01 Overview](docs/01-OVERVIEW.md) | Problem, users, features, stack, guided tour |
+| [02 Concepts](docs/02-CONCEPTS.md) | The ideas behind the code, taught with QuizForge examples |
+| [03 Architecture](docs/03-ARCHITECTURE.md) | Layers, state ownership, trust boundaries, trade-offs |
+| [04 Codebase Guide](docs/04-CODEBASE-GUIDE.md) | Where everything is and what it does |
+| [05 Core Workflows](docs/05-CORE-WORKFLOWS.md) | Features traced end to end |
+| [06 Data and API](docs/06-DATA-AND-API.md) | Schema, ownership rules, endpoint reference |
+| [07 AI Generation](docs/07-AI-GENERATION.md) | Document-to-quiz pipeline and its limits |
+| [08 Auth, Security, and Reliability](docs/08-AUTH-SECURITY-AND-RELIABILITY.md) | Sessions, integrity, recovery, known limitations |
+| [09 Setup and Configuration](docs/09-SETUP-AND-CONFIGURATION.md) | Local setup and environment variables |
+| [10 Testing and Troubleshooting](docs/10-TESTING-AND-TROUBLESHOOTING.md) | Tests, manual checks, fixes |
+| [11 Deployment and Operations](docs/11-DEPLOYMENT-AND-OPERATIONS.md) | Production build, Vercel, schema rollout |
+| [12 Developer and Interview Guide](docs/12-DEVELOPER-AND-INTERVIEW-GUIDE.md) | Making changes and explaining the project |
+
+---
+
 ## ✨ Features
 
 | | Feature | Description |
@@ -48,7 +69,7 @@
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.9+ (required by Next.js 16)
 - Google Gemini API Key ([get one](https://makersuite.google.com/app/apikey))
 - PostgreSQL database (e.g., [Neon](https://neon.tech) or [Supabase](https://supabase.com) - free tiers work)
 
@@ -116,6 +137,8 @@ Landing page  →  Drop PDF in hero pill  →  Configure quiz  →  Take quiz  �
 ---
 
 ## 🗂️ Project Structure
+
+Abridged. The full, current map is in [docs/04-CODEBASE-GUIDE.md](docs/04-CODEBASE-GUIDE.md).
 
 ```
 quizforge/
