@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import type { JWT } from 'next-auth/jwt';
 import { encode } from 'next-auth/jwt';
+import { createHash } from 'node:crypto';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import type { CredentialsConfig } from 'next-auth/providers/credentials';
 import type { NextAuthOptions } from 'next-auth';
@@ -9,9 +11,15 @@ import type { NextAuthOptions } from 'next-auth';
 const db = vi.hoisted(() => ({
   user: null as null | { id: string; email: string; name: string; password: string | null; googleSubject: string | null },
   findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), create: vi.fn(),
-  cookie: '', findMany: vi.fn(),
+  cookie: '', findMany: vi.fn(), updateMany: vi.fn(),
+  findToken: vi.fn(), deleteTokens: vi.fn(), transaction: vi.fn(),
 }));
-vi.mock('@/lib/prisma', () => ({ prisma: { user: db, quizResult: { findMany: db.findMany } } }));
+vi.mock('@/lib/prisma', () => ({ prisma: {
+  user: db, quizResult: { findMany: db.findMany },
+  passwordResetToken: { findUnique: db.findToken, deleteMany: db.deleteTokens },
+  $transaction: db.transaction,
+} }));
+vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: () => ({ success: true }) }));
 vi.mock('next-auth/next', async (importOriginal) => {
   const actual = await importOriginal<typeof import('next-auth/next')>();
   return { ...actual, getServerSession: (...args: Parameters<typeof actual.getServerSession>) => {
@@ -25,6 +33,8 @@ vi.mock('next-auth/next', async (importOriginal) => {
 });
 import { authOptions } from '@/lib/auth';
 import { GET as history } from '@/app/api/history/route';
+import { POST as resetPassword } from '@/app/api/auth/reset-password/route';
+import { POST as changePassword } from '@/app/api/account/password/route';
 
 const secret = 'isolated-session-revocation-test-secret';
 const credentialsAccount = { provider: 'credentials', type: 'credentials', providerAccountId: 'u1' } as const;
@@ -58,6 +68,17 @@ describe('credential-bound NextAuth sessions', () => {
     db.findFirst.mockImplementation(async () => db.user && { ...db.user });
     db.findUnique.mockImplementation(async () => db.user && { ...db.user });
     db.update.mockImplementation(async ({ data }) => { Object.assign(db.user!, data); return { ...db.user! }; });
+    db.updateMany.mockImplementation(async ({ where, data }) => {
+      if (!db.user || db.user.id !== where.id || db.user.password !== where.password) return { count: 0 };
+      Object.assign(db.user, data);
+      return { count: 1 };
+    });
+    db.deleteTokens.mockResolvedValue({ count: 1 });
+    // Route integration uses an in-memory DB; transaction races/rollback are
+    // modeled separately in password-recovery-races.test.ts.
+    db.transaction.mockImplementation(async run => run({
+      user: db, passwordResetToken: { deleteMany: db.deleteTokens },
+    }));
     db.create.mockImplementation(async ({ data }) => { db.user = { id: 'new-google-user', password: null, ...data }; return { ...db.user! }; });
   });
 
@@ -89,6 +110,59 @@ describe('credential-bound NextAuth sessions', () => {
     const user = await authorize();
     db.user!.password = await bcrypt.hash('new-password', 4);
     await expect(jwt({ token: { sub: user!.id }, user, account: credentialsAccount })).rejects.toThrow();
+  });
+
+  it.each(['reset', 'change'] as const)('rejects old cookies after the actual %s route and accepts a fresh login', async mode => {
+    const token = await login();
+    db.cookie = await encode({ token, secret });
+    db.findToken.mockResolvedValue({
+      id: 'reset1', userId: 'u1',
+      tokenHash: createHash('sha256').update('test-reset-token').digest('hex'),
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+    const route = mode === 'reset' ? resetPassword : changePassword;
+    const body = mode === 'reset'
+      ? { token: 'test-reset-token', password: 'new-password' }
+      : { currentPassword: 'old-password', newPassword: 'new-password' };
+    expect((await route(new NextRequest('http://localhost/api/password', {
+      method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' },
+    }))).status).toBe(200);
+    expect((await resolve(token)).session).toBeNull();
+    expect((await history(new Request('http://localhost/api/history'))).status).toBe(401);
+    expect(await authorize()).toBeNull();
+    const user = await authorize('new-password');
+    expect(user).not.toBeNull();
+    const fresh = await jwt({ token: {}, user, account: credentialsAccount });
+    expect((await resolve(fresh)).session?.user.id).toBe('u1');
+  });
+
+  it.each(['password change', 'deletion'] as const)('cannot resurrect authority when renewal overlaps %s', async mutation => {
+    const token = await login();
+    let started!: () => void;
+    let release!: () => void;
+    const reading = new Promise<void>(resolve => { started = resolve; });
+    const resume = new Promise<void>(resolve => { release = resolve; });
+    db.findUnique.mockImplementationOnce(async () => {
+      const snapshot = { ...db.user! };
+      started();
+      await resume;
+      return snapshot;
+    });
+    const renewal = resolve(token);
+    await reading;
+    if (mutation === 'deletion') db.user = null;
+    else db.user!.password = await bcrypt.hash('new-password', 4);
+    release();
+    // An already-authorized request can finish, but its newly encrypted cookie
+    // must retain the old marker and fail the next database-backed check.
+    const { setHeader } = await renewal;
+    const cookies = setHeader.mock.calls.filter(([name]) => name === 'Set-Cookie').flatMap(([, values]) => values as string[]);
+    const renewedCookie = cookies.find(value => value.startsWith('next-auth.session-token='));
+    expect(renewedCookie).toBeDefined();
+    db.cookie = renewedCookie!.split(';')[0].slice('next-auth.session-token='.length);
+    db.findMany.mockClear();
+    expect((await history(new Request('http://localhost/api/history'))).status).toBe(401);
+    expect(db.findMany).not.toHaveBeenCalled();
   });
 
   it('rejects legacy tokens instead of upgrading them during refresh', async () => {
