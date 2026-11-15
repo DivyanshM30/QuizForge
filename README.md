@@ -35,6 +35,9 @@ Detailed, code-verified guides live in [`docs/`](docs/README.md). Start with the
 | 🤖 | **Gemini AI Questions** | Google Gemini 2.5 Flash generates exam-quality MCQs with explanations |
 | ⚙️ | **Configurable Quiz** | Choose difficulty (easy / medium / hard / mixed), question count (5–50), and time limit (5–120 min) |
 | ⏱️ | **Timed Sessions** | Live countdown with warning states; time-up auto-submits the quiz |
+| 🎓 | **Practice / Exam Modes** | Practice gives feedback after each question; Exam simulation withholds answers until the end and keeps the answer key server-side |
+| ⏸️ | **Pause & Refresh Recovery** | Pause practice attempts; submitted answers survive a refresh inside the attempt window |
+| 🛡️ | **Server-Graded Integrity** | Scores are computed server-side from a signed attempt token - the browser never decides correctness |
 | 📊 | **Instant Analytics** | Topic-wise bar chart, accuracy score, weak areas, and revision suggestions |
 | 📚 | **Full History** | Every attempt saved to PostgreSQL - revisit and delete any past result |
 | 🔒 | **Auth** | Email/password auth via NextAuth.js + bcryptjs |
@@ -61,7 +64,9 @@ Detailed, code-verified guides live in [`docs/`](docs/README.md). Start with the
 - **Zustand** - client-side state
 - **Recharts** - performance charts
 - **React Dropzone** - file upload UX
+- **pdf-parse** + **mammoth** - PDF and DOCX text extraction
 - **bcryptjs** - password hashing
+- **Vitest** - unit and integration tests (141 tests across 21 files)
 
 ---
 
@@ -143,48 +148,128 @@ Abridged. The full, current map is in [docs/04-CODEBASE-GUIDE.md](docs/04-CODEBA
 ```
 quizforge/
 ├── app/
-│   ├── api/
-│   │   ├── analyze-document/     # Parses uploaded file → plain text
-│   │   ├── auth/[...nextauth]/   # NextAuth API routes
-│   │   ├── generate-questions/   # Gemini AI → MCQ generation
-│   │   ├── history/              # GET list of past quizzes
-│   │   ├── history/[id]/         # GET / DELETE single quiz result
-│   │   ├── register/             # User registration
-│   │   └── save-quiz/            # Persist quiz result to DB
-│   ├── history/
-│   │   ├── page.tsx              # History list page
-│   │   └── [id]/page.tsx         # Quiz detail page
+│   ├── api/                        # 20 route handlers
+│   │   ├── account/                # Profile read/update, account deletion
+│   │   ├── account/password/       # Password change (revokes other sessions)
+│   │   ├── analyze-document/       # Upload -> validate -> parse -> persist
+│   │   ├── auth/[...nextauth]/     # NextAuth handler
+│   │   ├── auth/forgot-password/   # Reset request (IP rate-limited)
+│   │   ├── auth/reset-password/    # Reset completion
+│   │   ├── cram/                   # Quiz from missed + weak-topic questions
+│   │   ├── documents/              # Document library list
+│   │   ├── documents/[id]/         # Single document
+│   │   ├── explain/                # Grounded follow-up explanation
+│   │   ├── generate-questions/     # Gemini -> MCQs, issues a signed attempt
+│   │   ├── history/                # Attempt list
+│   │   ├── history/[id]/           # Single attempt (GET / DELETE)
+│   │   ├── register/               # Sign-up
+│   │   ├── review/answer/          # Grade + reschedule one review item
+│   │   ├── review/due/             # Due review queue
+│   │   ├── save-quiz/              # Verify proof, grade server-side, persist
+│   │   ├── share/                  # Create a challenge link
+│   │   ├── share/[token]/          # Public payload (answers stripped) / revoke
+│   │   └── share/[token]/submit/   # Anonymous submit -> leaderboard
+│   ├── dashboard/page.tsx          # Analytics, calibration, dangerous gaps
+│   ├── documents/page.tsx          # Document library
+│   ├── forgot-password/page.tsx
+│   ├── hero/page.tsx               # Standalone hero preview
+│   ├── history/page.tsx            # Attempt list
+│   ├── history/[id]/page.tsx       # Attempt detail
 │   ├── login/page.tsx
+│   ├── q/[token]/page.tsx          # Public challenge player
 │   ├── register/page.tsx
-│   ├── upload/page.tsx           # Multi-step: upload → config → quiz → results
-│   ├── globals.css               # Design system (liquid-glass, dark-card, etc.)
+│   ├── reset-password/page.tsx
+│   ├── review/page.tsx             # Spaced-repetition session
+│   ├── settings/page.tsx           # Profile, password, preferences, deletion
+│   ├── upload/page.tsx             # Upload -> config -> quiz -> results
+│   ├── globals.css                 # Design system (liquid-glass, dark-card)
 │   ├── layout.tsx
-│   └── page.tsx                  # Landing page (HeroSection + LandingSections)
-├── components/
-│   ├── HeroSection.tsx           # Full-screen video hero with mini-upload
-│   ├── LandingSections.tsx       # Features / How It Works / About / Footer
-│   ├── AppNav.tsx                # Shared dark-glass nav bar
-│   ├── FileUpload.tsx            # Full upload dropzone (used inside /upload)
-│   ├── QuizConfig.tsx            # Difficulty / question count / time config
-│   ├── QuizInterface.tsx         # Question card with options & progress
-│   ├── FeedbackModal.tsx         # Post-answer explanation modal
-│   ├── ResultsDashboard.tsx      # Score, chart, suggestions
-│   ├── QuizHistory.tsx           # History row list
-│   ├── Timer.tsx                 # Live countdown pill
-│   └── LoadingSpinner.tsx
-├── lib/
-│   ├── auth.ts                   # NextAuth config
-│   ├── types.ts                  # Shared TypeScript types
-│   ├── gemini.ts                 # Gemini API wrapper
-│   ├── document-parser.ts        # PDF / DOCX text extraction
-│   ├── file-validation.ts        # File type + size validation
-│   ├── prisma.ts                 # Prisma client singleton
-│   └── quiz-utils.ts             # Score calculation, formatTime, etc.
+│   └── page.tsx                    # Landing page
+├── components/                     # 16 components
+│   ├── charts/                     # DashboardCharts, ResultsTopicChart
+│   ├── AppNav.tsx                  # Shared nav bar
+│   ├── AttemptDeadline.tsx         # Deadline display
+│   ├── AttemptRecovery.tsx         # Refresh-recovery handling
+│   ├── ExamInterface.tsx           # Exam mode (no per-question feedback)
+│   ├── FeedbackModal.tsx           # Explanation + "Ask the AI"
+│   ├── FileUpload.tsx              # Full upload dropzone
+│   ├── GoogleSignInButton.tsx
+│   ├── HeroSection.tsx             # Video hero + mini-upload
+│   ├── icons.tsx
+│   ├── LandingSections.tsx
+│   ├── LoadingSpinner.tsx
+│   ├── QuizConfig.tsx              # Mode, difficulty, count, time limit
+│   ├── QuizHistory.tsx
+│   ├── QuizInterface.tsx           # Practice-mode question card
+│   ├── ResultsDashboard.tsx
+│   └── Timer.tsx
+├── hooks/                          # useBannerDismissed, useFileUpload, useHistory
+├── lib/                            # 21 modules
+│   ├── attempt-deadline.ts         # Wall-clock deadline math
+│   ├── attempt-recovery.ts         # Refresh recovery
+│   ├── auth.ts                     # NextAuth config + callbacks
+│   ├── auth-security.ts            # Email normalisation, Google identity guard
+│   ├── constants.ts                # QUIZ_LIMITS shared by UI and server
+│   ├── countdown.ts                # Timer subscription
+│   ├── document-parser.ts          # PDF/DOCX extraction + zip-bomb guard
+│   ├── email.ts                    # Resend password-reset delivery
+│   ├── exam-token.ts               # AES-256-GCM seal for exam answer keys
+│   ├── file-validation.ts          # Extension, MIME, magic-byte checks
+│   ├── gemini.ts                   # Prompting, model fallback, sanitisation
+│   ├── history-analytics.ts        # Cross-attempt analytics
+│   ├── prisma.ts                   # Prisma client singleton
+│   ├── quiz-issuance.ts            # Canonicalise -> sign -> seal
+│   ├── quiz-proof.ts               # HMAC-signed attempt token
+│   ├── quiz-submission.ts          # Config and submission validation
+│   ├── quiz-utils.ts               # Scoring, topic analysis, shuffle
+│   ├── rate-limit.ts               # Fixed-window limiter
+│   ├── review.ts                   # 1/3/7/21-day scheduler
+│   ├── session-credentials.ts      # Credential stamp (session revocation)
+│   └── types.ts
 ├── store/
-│   └── quiz-store.ts             # Zustand store - quiz session state
+│   └── quiz-store.ts               # Zustand quiz session state
+├── tests/                          # 21 Vitest files, 141 tests
+├── benchmarks/
+│   ├── quiz-generation/            # 54 fixed cases + PROTOCOL.md
+│   └── gemini-live/                # Live validity + parse-latency harness
+├── scripts/
+│   └── benchmark-quiz-generation.mjs
+├── patches/                        # patch-package (mammoth)
 └── prisma/
-    └── schema.prisma
+    └── schema.prisma               # 7 models
 ```
+
+---
+
+## 🧪 Testing
+
+```bash
+npm test           # Vitest - 141 tests across 21 files
+npm run typecheck  # tsc --noEmit
+npm run lint       # ESLint
+```
+
+Coverage is **79.5% of lines in `lib/`** (the business logic) and 28.7% across the whole
+codebase - most route handlers and page components are not yet covered directly.
+
+| Suite | What it guards |
+|---|---|
+| `session-revocation` | Old cookies rejected after password reset and change |
+| `save-quiz-integrity` | Proof verification, idempotent save, tampering rejected |
+| `attempt-recovery`, `attempt-deadline` | Refresh recovery and wall-clock timers |
+| `exam-token`, `quiz-proof` | AES-GCM sealing and HMAC proof verification |
+| `gemini-response` | Model output sanitisation (drop vs repair) |
+| `rate-limit`, `auth-security`, `file-validation` | Limiter, Google identity guard, upload validation |
+
+The generation pipeline also has a pre-registered benchmark:
+
+```bash
+node scripts/benchmark-quiz-generation.mjs
+```
+
+It runs 54 fixed cases against both the baseline and the current parser, and refuses to compare
+if the corpus, cases, lockfile or protocol hashes differ. Reports are written to
+`docs/local/quiz-generation-metric/`.
 
 ---
 
@@ -224,7 +309,8 @@ quizforge/
 
 ## 📜 License
 
-MIT - free to use, modify, and distribute.
+No license has been declared for this repository, so all rights are reserved by default. To let
+others reuse it, add a `LICENSE` file and a matching `"license"` field in `package.json`.
 
 ---
 
